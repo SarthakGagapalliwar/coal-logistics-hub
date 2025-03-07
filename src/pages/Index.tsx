@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { motion } from 'framer-motion';
 
 const Index = () => {
   const [username, setUsername] = useState('');
@@ -36,49 +35,17 @@ const Index = () => {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: 'spring',
-        stiffness: 260,
-        damping: 20
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30 px-4">
-      <motion.div
-        className="w-full max-w-md"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <motion.div 
-          className="text-center mb-8"
-          variants={itemVariants}
-        >
+      <div className="w-full max-w-md animate-fade-in">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Coal Logistics Hub</h1>
           <p className="text-muted-foreground">
             Manage your transportation operations efficiently
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants}>
+        <div className="animate-scale-in">
           <Card className="border-0 shadow-xl bg-card/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>Login</CardTitle>
@@ -122,8 +89,8 @@ const Index = () => {
               </ul>
             </CardFooter>
           </Card>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };

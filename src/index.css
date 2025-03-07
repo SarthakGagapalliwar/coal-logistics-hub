@@ -1,183 +1,78 @@
 
+@import "./styles/animation.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
-    --background: 240 25% 98%;
-    --foreground: 240 10% 4%;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
-
+    --card-foreground: 240 10% 3.9%;
+ 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-
-    --primary: 210 95% 55%;
+    --popover-foreground: 240 10% 3.9%;
+ 
+    --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
-
-    --secondary: 210 30% 96%;
-    --secondary-foreground: 240 5% 30%;
-
-    --muted: 210 30% 96%;
-    --muted-foreground: 240 5% 40%;
-
-    --accent: 210 30% 92%;
-    --accent-foreground: 240 5% 30%;
-
-    --destructive: 0 84% 60%;
+ 
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+ 
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+ 
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 10% 90%;
-    --input: 240 10% 90%;
-    --ring: 240 5% 65%;
-
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+ 
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 210 95% 55%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 30% 95%;
-    --sidebar-accent-foreground: 240 5% 26%;
-    --sidebar-border: 240 10% 90%;
-    --sidebar-ring: 210 95% 55%;
   }
-
+ 
   .dark {
-    --background: 240 10% 4%;
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-
-    --card: 240 10% 6%;
+ 
+    --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-
-    --popover: 240 10% 6%;
+ 
+    --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-
-    --primary: 210 95% 55%;
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 240 5% 12%;
+ 
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+ 
+    --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-
-    --muted: 240 5% 12%;
-    --muted-foreground: 240 5% 65%;
-
-    --accent: 240 5% 12%;
+ 
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+ 
+    --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 84% 60%;
+ 
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 240 5% 16%;
-    --input: 240 5% 16%;
-    --ring: 240 5% 65%;
-
-    --sidebar-background: 240 10% 6%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 210 95% 55%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 5% 10%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 5% 16%;
-    --sidebar-ring: 210 95% 55%;
+ 
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground;
   }
-
-  /* Typography */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-medium tracking-tight;
-  }
-
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar {
-    @apply w-2 h-2;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-secondary rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-all;
-  }
-
-  /* Custom Selection */
-  ::selection {
-    @apply bg-primary/20 text-primary;
-  }
-}
-
-@layer components {
-  /* Glass Card */
-  .glass-card {
-    @apply bg-white/80 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-white/10;
-  }
-
-  /* Premium Button */
-  .premium-button {
-    @apply relative overflow-hidden inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors 
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50;
-  }
-
-  .premium-button:before {
-    @apply content-[''] absolute top-0 -left-[100%] w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -z-10 transition-all duration-1000;
-  }
-
-  .premium-button:hover:before {
-    @apply left-[100%];
-  }
-
-  /* Shimmer Effect */
-  .shimmer {
-    @apply bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%] animate-shimmer;
-  }
-
-  /* Text Field */
-  .premium-input {
-    @apply backdrop-blur-sm bg-white/5 border border-white/10 focus-within:border-primary/50 rounded-md transition-all;
-  }
-
-  /* Page transition container */
-  .page-transition-container {
-    @apply min-h-[calc(100vh-4rem)] w-full;
-  }
-
-  /* Data card */
-  .data-card {
-    @apply relative overflow-hidden rounded-lg border bg-card p-5 transition-all hover:shadow-md;
-  }
-
-  .data-card::before {
-    @apply content-[''] absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity duration-300;
-    pointer-events: none;
-  }
-
-  .data-card:hover::before {
-    @apply opacity-100;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
-/* Font imports */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-/* Set the font family */
-:root {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
