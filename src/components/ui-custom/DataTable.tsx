@@ -14,7 +14,7 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Column<T> {
   header: string;
-  accessorKey: keyof T;
+  accessorKey: keyof T | string;
   cell?: (item: T) => React.ReactNode;
 }
 
@@ -100,7 +100,7 @@ const DataTable = <T extends Record<string, any>>({
                 >
                   {columns.map((column, colIdx) => (
                     <TableCell key={colIdx}>
-                      {column.cell ? column.cell(item) : item[column.accessorKey]}
+                      {column.cell ? column.cell(item) : item[column.accessorKey as keyof T]}
                     </TableCell>
                   ))}
                 </TableRow>

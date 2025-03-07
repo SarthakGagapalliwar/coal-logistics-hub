@@ -8,6 +8,9 @@ import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import Transporters from "./pages/Transporters";
+import Vehicles from "./pages/Vehicles";
+import Routes from "./pages/Routes";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +24,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/transporters" element={<Transporters />} />
+            <Route path="/vehicles" element={<Vehicles />} />
+            <Route path="/routes" element={<Routes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
