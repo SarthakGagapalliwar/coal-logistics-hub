@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -20,6 +19,7 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, username: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -126,6 +126,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Signup function
+  const signup = async (email: string, password: string, username: string): Promise<boolean> => {
+    setLoading(true);
+    
+    try {
+      // 1. Register user in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return false;
+      }
+      
+      if (data?.user) {
+        // 2. Create a profile record for the user
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: data.user.id,
+              username, 
+              role: 'user',
+              created_at: new Date().toISOString(),
+            }
+          ]);
+          
+        if (profileError) {
+          toast.error('Failed to create user profile');
+          setLoading(false);
+          return false;
+        }
+        
+        toast.success('Account created successfully! Please verify your email.');
+        navigate('/');
+        setLoading(false);
+        return true;
+      }
+      
+      setLoading(false);
+      return false;
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error('An unexpected error occurred during signup');
+      setLoading(false);
+      return false;
+    }
+  };
+
   // Logout function
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -146,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         loading,
         login,
+        signup,
         logout,
         isAuthenticated: !!user,
       }}

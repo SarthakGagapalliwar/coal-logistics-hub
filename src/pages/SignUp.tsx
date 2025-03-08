@@ -6,13 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock } from 'lucide-react';
+import { User, Mail, Lock } from 'lucide-react';
 
-const Index = () => {
+const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const [passwordError, setPasswordError] = useState('');
+  const { signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -22,14 +25,34 @@ const Index = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  const validatePassword = () => {
+    if (password !== confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    setPasswordError('');
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validatePassword()) {
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      const success = await login(email, password);
+      const success = await signup(email, password, username);
       if (success) {
-        navigate('/dashboard');
+        // The user will be redirected to login after email verification
       }
     } finally {
       setIsLoading(false);
@@ -42,20 +65,35 @@ const Index = () => {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Coal Logistics Hub</h1>
           <p className="text-muted-foreground">
-            Manage your transportation operations efficiently
+            Create an account to get started
           </p>
         </div>
 
         <div className="animate-scale-in">
           <Card className="border-0 shadow-xl bg-card/90 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>Login</CardTitle>
+              <CardTitle>Sign Up</CardTitle>
               <CardDescription>
-                Enter your credentials to access the platform
+                Enter your details to create a new account
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="johndoe"
+                      className="pl-10"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -86,19 +124,36 @@ const Index = () => {
                     />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="confirm password"
+                      className="pl-10"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {passwordError && (
+                    <p className="text-sm text-destructive">{passwordError}</p>
+                  )}
+                </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Logging in...' : 'Login'}
+                  {isLoading ? 'Creating Account...' : 'Sign Up'}
                 </Button>
               </form>
             </CardContent>
             <CardFooter className="flex flex-col text-sm text-muted-foreground">
               <p className="mb-2">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Sign up
+                Already have an account?{" "}
+                <Link to="/" className="text-primary hover:underline">
+                  Log in
                 </Link>
               </p>
-              <p className="text-xs">This application uses Supabase for authentication and data storage</p>
             </CardFooter>
           </Card>
         </div>
@@ -107,4 +162,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default SignUp;
