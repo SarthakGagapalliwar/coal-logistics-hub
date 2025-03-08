@@ -63,5 +63,6 @@ export type DbShipment = {
   status: string;
   departure_time: string;
   arrival_time: string | null;
+  remarks?: string; // Added this field
   created_at: string;
 };

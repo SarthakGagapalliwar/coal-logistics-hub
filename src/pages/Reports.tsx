@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
@@ -176,7 +175,7 @@ const Reports = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{item.count} shipments</div>
                     <div className="text-xs text-muted-foreground">
-                      {((item.count / shipmentStatusData.reduce((sum, i) => sum + i.count, 0)) * 100).toFixed(1)}% of total
+                      {((Number(item.count) / shipmentStatusData.reduce((sum, i) => sum + Number(i.count), 0)) * 100).toFixed(1)}% of total
                     </div>
                   </CardContent>
                 </Card>
