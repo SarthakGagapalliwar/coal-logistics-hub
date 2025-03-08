@@ -5,11 +5,36 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Check if we're in development mode
+const isDevelopment = import.meta.env.MODE === 'development';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a mock client for development if variables are missing
+const createMockClient = () => {
+  console.warn('Using mock Supabase client. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for a real connection.');
+  
+  // Return a mock client with the same interface but no real operations
+  return {
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signInWithPassword: () => Promise.resolve({ data: { user: { id: 'mock-user-id', email: 'mock@example.com' } }, error: null }),
+      signOut: () => Promise.resolve({ error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    from: () => ({
+      select: () => ({ data: [], error: null }),
+      insert: () => ({ data: [], error: null }),
+      update: () => ({ data: [], error: null }),
+      delete: () => ({ data: [], error: null }),
+      eq: () => ({ data: [], error: null }),
+    }),
+    rpc: () => Promise.resolve({ data: [], error: null }),
+  };
+};
+
+// Initialize the Supabase client
+export const supabase = (!supabaseUrl || !supabaseAnonKey) && isDevelopment
+  ? createMockClient() as any
+  : createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 // Helper function to handle Supabase errors consistently
 export const handleSupabaseError = (error: Error | null) => {
