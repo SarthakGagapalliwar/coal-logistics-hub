@@ -15,17 +15,34 @@ const createMockClient = () => {
   // Return a mock client with the same interface but no real operations
   return {
     auth: {
-      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-      signInWithPassword: () => Promise.resolve({ data: { user: { id: 'mock-user-id', email: 'mock@example.com' } }, error: null }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      signUp: ({ email, password }) => Promise.resolve({ 
+        data: { user: { id: 'mock-user-id', email } }, 
+        error: null 
+      }),
+      signInWithPassword: () => Promise.resolve({ 
+        data: { user: { id: 'mock-user-id', email: 'mock@example.com' } }, 
+        error: null 
+      }),
       signOut: () => Promise.resolve({ error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      onAuthStateChange: (callback) => {
+        // Call callback once with a fake signed-in session
+        callback('SIGNED_IN', { user: { id: 'mock-user-id', email: 'mock@example.com' } });
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      },
     },
-    from: () => ({
-      select: () => ({ data: [], error: null }),
-      insert: () => ({ data: [], error: null }),
-      update: () => ({ data: [], error: null }),
-      delete: () => ({ data: [], error: null }),
-      eq: () => ({ data: [], error: null }),
+    from: (table) => ({
+      select: () => ({ 
+        eq: () => ({ 
+          single: () => Promise.resolve({ data: { role: 'user', username: 'mock-user' }, error: null }) 
+        }),
+        data: [], 
+        error: null 
+      }),
+      insert: () => Promise.resolve({ data: [], error: null }),
+      update: () => Promise.resolve({ data: [], error: null }),
+      delete: () => Promise.resolve({ data: [], error: null }),
+      eq: () => Promise.resolve({ data: [], error: null }),
     }),
     rpc: () => Promise.resolve({ data: [], error: null }),
   };
