@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
 import DataTable from '@/components/ui-custom/DataTable';
-import { routes, Route } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,65 +23,27 @@ import {
 } from '@/components/ui/card';
 import { Plus, Edit, Trash, MapPin, Route as RouteIcon } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from 'sonner';
+import { useRoutes } from '@/hooks/use-routes';
 import { formatCurrency } from '@/lib/data';
 
 const Routes = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const isMobile = useIsMobile();
+  const {
+    routes,
+    isLoading,
+    openDialog,
+    setOpenDialog,
+    selectedRoute,
+    formData,
+    handleInputChange,
+    handleEditRoute,
+    handleAddRoute,
+    handleSubmit,
+    handleDeleteRoute,
+    isSubmitting,
+    isDeleting
+  } = useRoutes();
   
-  // Form state
-  const [formData, setFormData] = useState({
-    source: '',
-    destination: '',
-    distanceKm: '',
-    billingRatePerTon: '',
-    vendorRatePerTon: '',
-    estimatedTime: '',
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditRoute = (route: Route) => {
-    setSelectedRoute(route);
-    setFormData({
-      source: route.source,
-      destination: route.destination,
-      distanceKm: route.distanceKm.toString(),
-      billingRatePerTon: route.billingRatePerTon.toString(),
-      vendorRatePerTon: route.vendorRatePerTon.toString(),
-      estimatedTime: route.estimatedTime.toString(),
-    });
-    setOpenDialog(true);
-  };
-
-  const handleAddRoute = () => {
-    setSelectedRoute(null);
-    setFormData({
-      source: '',
-      destination: '',
-      distanceKm: '',
-      billingRatePerTon: '',
-      vendorRatePerTon: '',
-      estimatedTime: '',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This would typically send data to your backend
-    toast.success(
-      selectedRoute 
-        ? `Route "${formData.source} to ${formData.destination}" updated successfully` 
-        : `Route "${formData.source} to ${formData.destination}" added successfully`
-    );
-    setOpenDialog(false);
-  };
+  const isMobile = useIsMobile();
 
   // Columns for the data table
   const columns = [
@@ -100,27 +62,27 @@ const Routes = () => {
     {
       header: 'Distance',
       accessorKey: 'distanceKm',
-      cell: (row: Route) => `${row.distanceKm} km`,
+      cell: (row: any) => `${row.distanceKm} km`,
     },
     {
       header: 'Billing Rate',
       accessorKey: 'billingRatePerTon',
-      cell: (row: Route) => formatCurrency(row.billingRatePerTon),
+      cell: (row: any) => formatCurrency(row.billingRatePerTon),
     },
     {
       header: 'Vendor Rate',
       accessorKey: 'vendorRatePerTon',
-      cell: (row: Route) => formatCurrency(row.vendorRatePerTon),
+      cell: (row: any) => formatCurrency(row.vendorRatePerTon),
     },
     {
       header: 'Est. Time',
       accessorKey: 'estimatedTime',
-      cell: (row: Route) => `${row.estimatedTime} hrs`,
+      cell: (row: any) => `${row.estimatedTime} hrs`,
     },
     {
       header: 'Actions',
       accessorKey: 'actions',
-      cell: (row: Route) => (
+      cell: (row: any) => (
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
@@ -133,7 +95,8 @@ const Routes = () => {
             variant="outline" 
             size="icon"
             className="text-destructive hover:text-destructive"
-            onClick={() => toast.info(`Delete functionality would remove route from ${row.source} to ${row.destination}`)}
+            onClick={() => handleDeleteRoute(row.id)}
+            disabled={isDeleting}
           >
             <Trash className="h-4 w-4" />
           </Button>
@@ -151,6 +114,9 @@ const Routes = () => {
 
   return (
     <PageTransition>
+      <Helmet>
+        <title>Routes | Coal Logistics Hub</title>
+      </Helmet>
       <div className="container py-6 max-w-7xl">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -172,12 +138,18 @@ const Routes = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable
-              data={routes}
-              columns={mobileColumns}
-              searchKey="source"
-              searchPlaceholder="Search by source location..."
-            />
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <DataTable
+                data={routes}
+                columns={mobileColumns}
+                searchKey="source"
+                searchPlaceholder="Search by source location..."
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -292,8 +264,15 @@ const Routes = () => {
                 <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {selectedRoute ? 'Update' : 'Add'} Route
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
+                      {selectedRoute ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    <>{selectedRoute ? 'Update' : 'Add'} Route</>
+                  )}
                 </Button>
               </DialogFooter>
             </form>

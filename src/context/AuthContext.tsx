@@ -2,27 +2,24 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 
 // User types
 export type UserRole = 'admin' | 'user';
 
-export interface User {
+export interface AuthUser {
   id: string;
   username: string;
   role: UserRole;
+  email?: string;
 }
-
-// Mock users for demonstration
-const MOCK_USERS = [
-  { id: '1', username: 'admin', password: 'admin123', role: 'admin' as UserRole },
-  { id: '2', username: 'user', password: 'user123', role: 'user' as UserRole },
-];
 
 // Auth context type
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -32,53 +29,113 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Auth provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for saved auth on mount
+  // Initialize auth state from Supabase session
   useEffect(() => {
-    const storedUser = localStorage.getItem('logisticsUser');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
-        localStorage.removeItem('logisticsUser');
+    const initializeAuth = async () => {
+      setLoading(true);
+      
+      // Check for existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await setUserFromSession(session);
       }
-    }
-    setLoading(false);
+      
+      // Listen for auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            await setUserFromSession(session);
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+          }
+        }
+      );
+      
+      setLoading(false);
+      
+      // Cleanup subscription
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+    
+    initializeAuth();
   }, []);
 
-  // Login function
-  const login = async (username: string, password: string): Promise<boolean> => {
-    setLoading(true);
+  // Helper to convert Supabase user to our app user
+  const setUserFromSession = async (session: Session) => {
+    const supabaseUser = session.user;
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    if (!supabaseUser) return;
     
-    const foundUser = MOCK_USERS.find(
-      u => u.username === username && u.password === password
-    );
+    // Fetch user role from profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role, username')
+      .eq('id', supabaseUser.id)
+      .single();
     
-    if (foundUser) {
-      const { password, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('logisticsUser', JSON.stringify(userWithoutPassword));
-      toast.success(`Welcome back, ${userWithoutPassword.username}!`);
-      setLoading(false);
-      return true;
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return;
     }
     
-    setLoading(false);
-    toast.error('Invalid username or password');
-    return false;
+    // Set user with data from auth and profile
+    setUser({
+      id: supabaseUser.id,
+      username: data?.username || supabaseUser.email?.split('@')[0] || 'user',
+      role: (data?.role as UserRole) || 'user',
+      email: supabaseUser.email
+    });
+  };
+
+  // Login function
+  const login = async (email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return false;
+      }
+      
+      if (data?.user) {
+        toast.success(`Welcome back!`);
+        setLoading(false);
+        return true;
+      }
+      
+      setLoading(false);
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An unexpected error occurred during login');
+      setLoading(false);
+      return false;
+    }
   };
 
   // Logout function
-  const logout = () => {
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      toast.error('Error signing out');
+      return;
+    }
+    
     setUser(null);
-    localStorage.removeItem('logisticsUser');
     toast.info('You have been logged out');
     navigate('/');
   };

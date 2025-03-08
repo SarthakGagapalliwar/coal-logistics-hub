@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
@@ -26,7 +26,7 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(username, password);
+      const success = await login(email, password);
       if (success) {
         navigate('/dashboard');
       }
@@ -56,12 +56,13 @@ const Index = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="username"
-                    placeholder="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -81,12 +82,9 @@ const Index = () => {
                 </Button>
               </form>
             </CardContent>
-            <CardFooter className="text-sm text-muted-foreground">
-              <p>Demo accounts:</p>
-              <ul className="list-disc ml-5 space-y-1">
-                <li>Admin: username - <span className="font-medium">admin</span>, password - <span className="font-medium">admin123</span></li>
-                <li>User: username - <span className="font-medium">user</span>, password - <span className="font-medium">user123</span></li>
-              </ul>
+            <CardFooter className="flex flex-col text-sm text-muted-foreground">
+              <p className="mb-2">For testing purposes, create a user in Supabase Authentication</p>
+              <p className="text-xs">This application uses Supabase for authentication and data storage</p>
             </CardFooter>
           </Card>
         </div>

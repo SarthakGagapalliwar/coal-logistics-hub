@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
 import DataTable from '@/components/ui-custom/DataTable';
-import { transporters, Transporter } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Card,
@@ -24,62 +23,26 @@ import {
 } from '@/components/ui/card';
 import { Plus, Edit, Trash, User, Phone, MapPin, Building, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from 'sonner';
+import { useTransporters } from '@/hooks/use-transporters';
 
 const Transporters = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedTransporter, setSelectedTransporter] = useState<Transporter | null>(null);
-  const isMobile = useIsMobile();
+  const {
+    transporters,
+    isLoading,
+    openDialog,
+    setOpenDialog,
+    selectedTransporter,
+    formData,
+    handleInputChange,
+    handleEditTransporter,
+    handleAddTransporter,
+    handleSubmit,
+    handleDeleteTransporter,
+    isSubmitting,
+    isDeleting
+  } = useTransporters();
   
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    gstn: '',
-    contactPerson: '',
-    contactNumber: '',
-    address: '',
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditTransporter = (transporter: Transporter) => {
-    setSelectedTransporter(transporter);
-    setFormData({
-      name: transporter.name,
-      gstn: transporter.gstn,
-      contactPerson: transporter.contactPerson,
-      contactNumber: transporter.contactNumber,
-      address: transporter.address,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleAddTransporter = () => {
-    setSelectedTransporter(null);
-    setFormData({
-      name: '',
-      gstn: '',
-      contactPerson: '',
-      contactNumber: '',
-      address: '',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This would typically send data to your backend
-    // For demo purposes, we're just showing a toast
-    toast.success(
-      selectedTransporter 
-        ? `Transporter "${formData.name}" updated successfully` 
-        : `Transporter "${formData.name}" added successfully`
-    );
-    setOpenDialog(false);
-  };
+  const isMobile = useIsMobile();
 
   // Columns for the data table
   const columns = [
@@ -106,7 +69,7 @@ const Transporters = () => {
     {
       header: 'Actions',
       accessorKey: 'actions',
-      cell: (row: Transporter) => (
+      cell: (row: any) => (
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
@@ -119,7 +82,8 @@ const Transporters = () => {
             variant="outline" 
             size="icon"
             className="text-destructive hover:text-destructive"
-            onClick={() => toast.info(`Delete functionality would remove ${row.name}`)}
+            onClick={() => handleDeleteTransporter(row.id)}
+            disabled={isDeleting}
           >
             <Trash className="h-4 w-4" />
           </Button>
@@ -137,6 +101,9 @@ const Transporters = () => {
 
   return (
     <PageTransition>
+      <Helmet>
+        <title>Transporters | Coal Logistics Hub</title>
+      </Helmet>
       <div className="container py-6 max-w-7xl">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -158,12 +125,18 @@ const Transporters = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable
-              data={transporters}
-              columns={mobileColumns}
-              searchKey="name"
-              searchPlaceholder="Search transporters..."
-            />
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <DataTable
+                data={transporters}
+                columns={mobileColumns}
+                searchKey="name"
+                searchPlaceholder="Search transporters..."
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -265,8 +238,15 @@ const Transporters = () => {
                 <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {selectedTransporter ? 'Update' : 'Add'} Transporter
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
+                      {selectedTransporter ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    <>{selectedTransporter ? 'Update' : 'Add'} Transporter</>
+                  )}
                 </Button>
               </DialogFooter>
             </form>
