@@ -1,109 +1,54 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock } from 'lucide-react';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
+import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      const success = await login(email, password);
-      if (success) {
-        navigate('/dashboard');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  const { user } = useAuth();
+  
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30 px-4">
-      <div className="w-full max-w-md animate-fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Coal Logistics Hub</h1>
-          <p className="text-muted-foreground">
-            Manage your transportation operations efficiently
+    <DashboardLayout>
+      <div className="container mx-auto flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-3xl"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+            Coal Logistics Management Hub
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8">
+            Streamline your coal transportation operations with our comprehensive logistics management platform
           </p>
-        </div>
-
-        <div className="animate-scale-in">
-          <Card className="border-0 shadow-xl bg-card/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Login</CardTitle>
-              <CardDescription>
-                Enter your credentials to access the platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      className="pl-10"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="password"
-                      className="pl-10"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Logging in...' : 'Login'}
-                </Button>
-              </form>
-            </CardContent>
-            <CardFooter className="flex flex-col text-sm text-muted-foreground">
-              <p className="mb-2">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Sign up
+          
+          {user ? (
+            <Button asChild size="lg" className="mt-4">
+              <Link to="/dashboard">
+                Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button asChild size="lg">
+                <Link to="/signup">
+                  Sign Up <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
-              </p>
-              <p className="text-xs">This application uses Supabase for authentication and data storage</p>
-            </CardFooter>
-          </Card>
-        </div>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/dashboard">
+                  View Demo <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          )}
+        </motion.div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

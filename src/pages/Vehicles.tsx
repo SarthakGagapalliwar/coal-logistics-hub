@@ -1,4 +1,6 @@
+
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import PageTransition from '@/components/ui-custom/PageTransition';
 import DataTable from '@/components/ui-custom/DataTable';
@@ -167,6 +169,9 @@ const Vehicles = () => {
   return (
     <DashboardLayout>
       <PageTransition>
+        <Helmet>
+          <title>Vehicles | Coal Logistics Hub</title>
+        </Helmet>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>

@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
 import DataTable from '@/components/ui-custom/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +21,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Plus, Edit, Trash, MapPin, Route as RouteIcon } from 'lucide-react';
+import { Plus, Edit, Trash, MapPin, FileText, DollarSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRoutes } from '@/hooks/use-routes';
-import { formatCurrency } from '@/lib/data';
 
-const Routes = () => {
+const RoutesPage = () => {
   const {
     routes,
     isLoading,
@@ -52,32 +51,24 @@ const Routes = () => {
       accessorKey: 'id',
     },
     {
-      header: 'Source',
-      accessorKey: 'source',
+      header: 'Origin',
+      accessorKey: 'origin',
     },
     {
       header: 'Destination',
       accessorKey: 'destination',
     },
     {
-      header: 'Distance',
-      accessorKey: 'distanceKm',
-      cell: (row: any) => `${row.distanceKm} km`,
+      header: 'Distance (km)',
+      accessorKey: 'distanceKilometers',
     },
     {
-      header: 'Billing Rate',
+      header: 'Billing Rate (₹/ton)',
       accessorKey: 'billingRatePerTon',
-      cell: (row: any) => formatCurrency(row.billingRatePerTon),
     },
     {
-      header: 'Vendor Rate',
+      header: 'Vendor Rate (₹/ton)',
       accessorKey: 'vendorRatePerTon',
-      cell: (row: any) => formatCurrency(row.vendorRatePerTon),
-    },
-    {
-      header: 'Est. Time',
-      accessorKey: 'estimatedTime',
-      cell: (row: any) => `${row.estimatedTime} hrs`,
     },
     {
       header: 'Actions',
@@ -108,179 +99,171 @@ const Routes = () => {
   // For mobile, show fewer columns
   const mobileColumns = isMobile
     ? columns.filter(col => 
-        ['Source', 'Destination', 'Distance', 'Actions'].includes(col.header)
+        ['ID', 'Origin', 'Destination', 'Actions'].includes(col.header)
       )
     : columns;
-
+  
   return (
-    <PageTransition>
-      <Helmet>
-        <title>Routes | Coal Logistics Hub</title>
-      </Helmet>
-      <div className="container py-6 max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Routes</h1>
-            <p className="text-muted-foreground">
-              Manage transportation routes and rates
-            </p>
+    <DashboardLayout>
+      <PageTransition>
+        <Helmet>
+          <title>Routes | Coal Logistics Hub</title>
+        </Helmet>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Routes</h1>
+              <p className="text-muted-foreground">
+                Manage transportation routes and their details
+              </p>
+            </div>
+            <Button onClick={handleAddRoute}>
+              <Plus className="mr-2 h-4 w-4" /> Add Route
+            </Button>
           </div>
-          <Button onClick={handleAddRoute}>
-            <Plus className="mr-2 h-4 w-4" /> Add Route
-          </Button>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Routes List</CardTitle>
+              <CardDescription>
+                View and manage all available transportation routes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <DataTable
+                  data={routes}
+                  columns={mobileColumns}
+                  searchKey="origin"
+                  searchPlaceholder="Search routes..."
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedRoute ? 'Edit Route' : 'Add New Route'}
+                </DialogTitle>
+                <DialogDescription>
+                  Fill in the details for the transportation route
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="origin">Origin</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="origin"
+                        name="origin"
+                        placeholder="Enter origin location"
+                        className="pl-10"
+                        value={formData.origin}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="destination">Destination</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="destination"
+                        name="destination"
+                        placeholder="Enter destination location"
+                        className="pl-10"
+                        value={formData.destination}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="distanceKilometers">Distance (km)</Label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="distanceKilometers"
+                        name="distanceKilometers"
+                        type="number"
+                        placeholder="Enter distance in kilometers"
+                        className="pl-10"
+                        value={formData.distanceKilometers}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="billingRatePerTon">Billing Rate (₹/ton)</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="billingRatePerTon"
+                        name="billingRatePerTon"
+                        type="number"
+                        placeholder="Enter billing rate per ton"
+                        className="pl-10"
+                        value={formData.billingRatePerTon}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="vendorRatePerTon">Vendor Rate (₹/ton)</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="vendorRatePerTon"
+                        name="vendorRatePerTon"
+                        type="number"
+                        placeholder="Enter vendor rate per ton"
+                        className="pl-10"
+                        value={formData.vendorRatePerTon}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
+                        {selectedRoute ? 'Updating...' : 'Adding...'}
+                      </>
+                    ) : (
+                      <>{selectedRoute ? 'Update' : 'Add'} Route</>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Routes List</CardTitle>
-            <CardDescription>
-              View and manage all defined transportation routes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <DataTable
-                data={routes}
-                columns={mobileColumns}
-                searchKey="source"
-                searchPlaceholder="Search by source location..."
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedRoute ? 'Edit Route' : 'Add New Route'}
-              </DialogTitle>
-              <DialogDescription>
-                Fill in the details for the transportation route
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="source">Source Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      id="source"
-                      name="source"
-                      placeholder="Enter source location"
-                      className="pl-10"
-                      value={formData.source}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="destination">Destination Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      id="destination"
-                      name="destination"
-                      placeholder="Enter destination location"
-                      className="pl-10"
-                      value={formData.destination}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="distanceKm">Distance (km)</Label>
-                  <div className="relative">
-                    <RouteIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      id="distanceKm"
-                      name="distanceKm"
-                      type="number"
-                      min="1"
-                      placeholder="Enter distance in km"
-                      className="pl-10"
-                      value={formData.distanceKm}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="estimatedTime">Estimated Time (hours)</Label>
-                  <Input
-                    id="estimatedTime"
-                    name="estimatedTime"
-                    type="number"
-                    min="1"
-                    step="0.5"
-                    placeholder="Enter estimated time in hours"
-                    value={formData.estimatedTime}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="billingRatePerTon">Billing Rate (₹ per ton)</Label>
-                  <Input
-                    id="billingRatePerTon"
-                    name="billingRatePerTon"
-                    type="number"
-                    min="1"
-                    placeholder="Enter billing rate per ton"
-                    value={formData.billingRatePerTon}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="vendorRatePerTon">Vendor Rate (₹ per ton)</Label>
-                  <Input
-                    id="vendorRatePerTon"
-                    name="vendorRatePerTon"
-                    type="number"
-                    min="1"
-                    placeholder="Enter vendor rate per ton"
-                    value={formData.vendorRatePerTon}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
-                      {selectedRoute ? 'Updating...' : 'Adding...'}
-                    </>
-                  ) : (
-                    <>{selectedRoute ? 'Update' : 'Add'} Route</>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </PageTransition>
+      </PageTransition>
+    </DashboardLayout>
   );
 };
 
-export default Routes;
+export default RoutesPage;

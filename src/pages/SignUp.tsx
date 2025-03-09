@@ -1,164 +1,124 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Mail, Lock } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { toast } from 'sonner';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 const SignUp = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
-  const { signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { signup } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    username: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
-
-  const validatePassword = () => {
-    if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
-      return false;
-    }
-    
-    if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
-      return false;
-    }
-    
-    setPasswordError('');
-    return true;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validatePassword()) {
-      return;
-    }
-    
     setIsLoading(true);
-    
+
     try {
-      const success = await signup(email, password, username);
-      if (success) {
-        // The user will be redirected to login after email verification
-      }
+      await signup(formData.email, formData.password, formData.username);
+      toast.success('Account created successfully!');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error('Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/30 px-4">
-      <div className="w-full max-w-md animate-fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Coal Logistics Hub</h1>
-          <p className="text-muted-foreground">
-            Create an account to get started
-          </p>
-        </div>
-
-        <div className="animate-scale-in">
-          <Card className="border-0 shadow-xl bg-card/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Sign Up</CardTitle>
+    <DashboardLayout>
+      <div className="container max-w-lg mx-auto flex items-center justify-center min-h-[calc(100vh-4rem)] py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full"
+        >
+          <Card>
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
               <CardDescription>
-                Enter your details to create a new account
+                Enter your information to create an account
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="username"
-                      type="text"
-                      placeholder="johndoe"
-                      className="pl-10"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Input
+                    id="username"
+                    name="username"
+                    placeholder="johndoe"
+                    required
+                    value={formData.username}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      className="pl-10"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="john.doe@example.com"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="password"
-                      className="pl-10"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="confirm password"
-                      className="pl-10"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  {passwordError && (
-                    <p className="text-sm text-destructive">{passwordError}</p>
-                  )}
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating Account...' : 'Sign Up'}
+                  {isLoading ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-current"></span>
+                      Creating account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
                 </Button>
               </form>
             </CardContent>
-            <CardFooter className="flex flex-col text-sm text-muted-foreground">
-              <p className="mb-2">
-                Already have an account?{" "}
+            <CardFooter className="flex justify-center">
+              <div className="text-sm text-muted-foreground">
+                Already have an account?{' '}
                 <Link to="/" className="text-primary hover:underline">
-                  Log in
+                  Sign In
                 </Link>
-              </p>
+              </div>
             </CardFooter>
           </Card>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
