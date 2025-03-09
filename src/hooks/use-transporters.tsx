@@ -94,13 +94,15 @@ export const useTransporters = () => {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['transporters'] });
-      toast.success(`Transporter "${formData.name}" added successfully`);
+      toast.success(`Transporter "${data.name}" added successfully`);
       setOpenDialog(false);
       resetForm();
       // Force a refetch
-      refetch();
+      setTimeout(() => {
+        refetch();
+      }, 100);
     },
     onError: (error: Error) => {
       console.error('Mutation error:', error);
@@ -130,7 +132,9 @@ export const useTransporters = () => {
       setOpenDialog(false);
       resetForm();
       // Force a refetch
-      refetch();
+      setTimeout(() => {
+        refetch();
+      }, 100);
     },
     onError: (error: Error) => {
       toast.error(`Failed to update transporter: ${error.message}`);
@@ -165,7 +169,9 @@ export const useTransporters = () => {
       }
       
       // Force a refetch
-      refetch();
+      setTimeout(() => {
+        refetch();
+      }, 100);
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete transporter: ${error.message}`);
@@ -248,6 +254,7 @@ export const useTransporters = () => {
     setOpenDialog,
     selectedTransporter,
     formData,
+    setFormData,
     handleInputChange,
     handleEditTransporter,
     handleAddTransporter,

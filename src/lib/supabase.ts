@@ -70,9 +70,9 @@ const createMockClient = () => {
           
           // Generate a mock ID if not provided
           const newItem = { 
-            id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
+            id: data.id || `mock-id-${Math.random().toString(36).substring(2, 10)}`,
             ...data,
-            created_at: new Date().toISOString()
+            created_at: data.created_at || new Date().toISOString()
           };
           
           // Add to mock storage
@@ -85,7 +85,10 @@ const createMockClient = () => {
           
           // Add chainable select method to insert
           const insertObj = {
-            select: () => insertObj,
+            select: () => Promise.resolve({
+              data: newItem,
+              error: null
+            }),
             single: () => Promise.resolve({ 
               data: newItem, 
               error: null 
@@ -108,11 +111,15 @@ const createMockClient = () => {
                     ...data,
                     updated_at: new Date().toISOString()
                   };
+                  return Promise.resolve({ 
+                    data: mockStorage[table][index], 
+                    error: null 
+                  });
                 }
               }
               
               return Promise.resolve({ 
-                data: data, 
+                data: null, 
                 error: null 
               });
             },
@@ -127,8 +134,14 @@ const createMockClient = () => {
               
               if (mockStorage[table]) {
                 const initialLength = mockStorage[table].length;
+                const deletedItem = mockStorage[table].find(item => item[column] === value);
                 mockStorage[table] = mockStorage[table].filter(item => item[column] !== value);
                 console.log(`[MOCK] Deleted ${initialLength - mockStorage[table].length} items`);
+                
+                return Promise.resolve({ 
+                  data: deletedItem || null, 
+                  error: null 
+                });
               }
               
               return Promise.resolve({ data: null, error: null });
