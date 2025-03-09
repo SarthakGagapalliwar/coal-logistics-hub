@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
@@ -43,6 +42,7 @@ const Shipments = () => {
     setOpenDialog,
     selectedShipment,
     formData,
+    setFormData,
     handleInputChange,
     handleSelectChange,
     handleEditShipment,
