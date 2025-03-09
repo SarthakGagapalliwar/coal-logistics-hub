@@ -3,55 +3,39 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { useTransporters, Transporter } from './use-transporters';
+import { useTransporters } from './use-transporters';
+import { useVehicles } from './use-vehicles';
+import { useRoutes } from './use-routes';
 
 // Type for our app's shipment format
 export interface Shipment {
   id: string;
   transporterId: string;
-  transporterName: string;
+  transporterName?: string;
   vehicleId: string;
-  vehicleNumber: string;
+  vehicleNumber?: string;
   source: string;
   destination: string;
   quantityTons: number;
-  status: 'Scheduled' | 'In Transit' | 'Delivered' | 'Delayed' | 'Cancelled';
+  status: string;
   departureTime: string;
   arrivalTime: string | null;
-  remarks: string;
+  remarks?: string;
 }
 
 // Convert DB format to app format
-const dbToAppShipment = async (dbShipment: DbShipment): Promise<Shipment> => {
-  // Fetch transporter name
-  const { data: transporterData } = await supabase
-    .from('transporters')
-    .select('name')
-    .eq('id', dbShipment.transporter_id)
-    .single();
-    
-  // Fetch vehicle number
-  const { data: vehicleData } = await supabase
-    .from('vehicles')
-    .select('vehicle_number')
-    .eq('id', dbShipment.vehicle_id)
-    .single();
-  
-  return {
-    id: dbShipment.id,
-    transporterId: dbShipment.transporter_id,
-    transporterName: transporterData?.name || 'Unknown',
-    vehicleId: dbShipment.vehicle_id,
-    vehicleNumber: vehicleData?.vehicle_number || 'Unknown',
-    source: dbShipment.source,
-    destination: dbShipment.destination,
-    quantityTons: dbShipment.quantity_tons,
-    status: dbShipment.status as Shipment['status'],
-    departureTime: dbShipment.departure_time,
-    arrivalTime: dbShipment.arrival_time,
-    remarks: dbShipment.remarks || '',
-  };
-};
+const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
+  id: dbShipment.id,
+  transporterId: dbShipment.transporter_id,
+  vehicleId: dbShipment.vehicle_id,
+  source: dbShipment.source,
+  destination: dbShipment.destination,
+  quantityTons: Number(dbShipment.quantity_tons),
+  status: dbShipment.status,
+  departureTime: dbShipment.departure_time,
+  arrivalTime: dbShipment.arrival_time,
+  remarks: dbShipment.remarks,
+});
 
 // Convert app format to DB format
 const appToDbShipment = (shipment: Partial<Shipment>) => ({
@@ -70,7 +54,10 @@ export const useShipments = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  
   const { transporters } = useTransporters();
+  const { vehicles } = useVehicles();
+  const { routes } = useRoutes();
   
   const [formData, setFormData] = useState({
     transporterId: '',
@@ -78,28 +65,10 @@ export const useShipments = () => {
     source: '',
     destination: '',
     quantityTons: '',
-    status: 'Scheduled',
+    status: 'Pending',
     departureTime: '',
+    arrivalTime: '',
     remarks: '',
-  });
-
-  // Query to fetch available vehicles for a selected transporter
-  const { data: availableVehicles = [] } = useQuery({
-    queryKey: ['vehicles', formData.transporterId],
-    queryFn: async () => {
-      if (!formData.transporterId) return [];
-      
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('transporter_id', formData.transporterId)
-        .eq('status', 'Available');
-      
-      if (error) throw new Error(error.message);
-      
-      return data || [];
-    },
-    enabled: !!formData.transporterId,
   });
 
   // Query to fetch shipments
@@ -112,66 +81,56 @@ export const useShipments = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('shipments')
-        .select('*')
+        .select(`
+          *,
+          transporters:transporter_id (name),
+          vehicles:vehicle_id (vehicle_number)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) {
         throw new Error(error.message);
       }
       
-      // Convert all DB shipments to app format
-      const appShipments = await Promise.all(
-        (data as DbShipment[]).map(dbToAppShipment)
-      );
-      
-      return appShipments;
+      return data.map((shipment: any) => ({
+        ...dbToAppShipment(shipment),
+        transporterName: shipment.transporters?.name || 'Unknown',
+        vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
+      }));
     }
   });
 
   // Mutation to add a new shipment
   const addShipmentMutation = useMutation({
-    mutationFn: async (shipment: Omit<Shipment, 'id' | 'transporterName' | 'vehicleNumber' | 'arrivalTime'>) => {
-      // First, update the vehicle status to "In Transit"
-      const { error: vehicleError } = await supabase
-        .from('vehicles')
-        .update({ status: 'In Transit' })
-        .eq('id', shipment.vehicleId);
-      
-      if (vehicleError) {
-        throw new Error(`Failed to update vehicle status: ${vehicleError.message}`);
-      }
-      
-      // Then create the shipment
+    mutationFn: async (shipment: Omit<Shipment, 'id'>) => {
       const { data, error } = await supabase
         .from('shipments')
-        .insert({
-          ...appToDbShipment(shipment),
-          created_at: new Date().toISOString(),
-        })
-        .select()
+        .insert(appToDbShipment(shipment))
+        .select(`
+          *,
+          transporters:transporter_id (name),
+          vehicles:vehicle_id (vehicle_number)
+        `)
         .single();
       
       if (error) {
-        // Revert vehicle status if shipment creation fails
-        await supabase
-          .from('vehicles')
-          .update({ status: 'Available' })
-          .eq('id', shipment.vehicleId);
-          
         throw new Error(error.message);
       }
       
-      return await dbToAppShipment(data as DbShipment);
+      return {
+        ...dbToAppShipment(data),
+        transporterName: data.transporters?.name || 'Unknown',
+        vehicleNumber: data.vehicles?.vehicle_number || 'Unknown',
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      toast.success(`Shipment created successfully`);
+      toast.success(`Shipment from ${formData.source} to ${formData.destination} added successfully`);
       setOpenDialog(false);
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`Failed to create shipment: ${error.message}`);
+      toast.error(`Failed to add shipment: ${error.message}`);
     }
   });
 
@@ -189,9 +148,9 @@ export const useShipments = () => {
       
       return shipment;
     },
-    onSuccess: () => {
+    onSuccess: (shipment) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
-      toast.success(`Shipment updated successfully`);
+      toast.success(`Shipment from ${shipment.source} to ${shipment.destination} updated successfully`);
       setOpenDialog(false);
       resetForm();
     },
@@ -203,28 +162,6 @@ export const useShipments = () => {
   // Mutation to delete a shipment
   const deleteShipmentMutation = useMutation({
     mutationFn: async (id: string) => {
-      // First get the shipment to know which vehicle to update
-      const { data: shipmentData, error: fetchError } = await supabase
-        .from('shipments')
-        .select('vehicle_id')
-        .eq('id', id)
-        .single();
-      
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-      
-      // Update the vehicle status back to "Available"
-      const { error: vehicleError } = await supabase
-        .from('vehicles')
-        .update({ status: 'Available' })
-        .eq('id', shipmentData.vehicle_id);
-      
-      if (vehicleError) {
-        throw new Error(`Failed to update vehicle status: ${vehicleError.message}`);
-      }
-      
-      // Delete the shipment
       const { error } = await supabase
         .from('shipments')
         .delete()
@@ -236,10 +173,16 @@ export const useShipments = () => {
       
       return id;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-      toast.success('Shipment deleted successfully');
+      
+      // Find the deleted shipment for the success message
+      const deletedShipment = shipments.find(s => s.id === variables);
+      if (deletedShipment) {
+        toast.success(`Shipment from ${deletedShipment.source} to ${deletedShipment.destination} deleted successfully`);
+      } else {
+        toast.success('Shipment deleted successfully');
+      }
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete shipment: ${error.message}`);
@@ -256,9 +199,16 @@ export const useShipments = () => {
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Reset vehicle selection if transporter changes
-    if (name === 'transporterId') {
-      setFormData(prev => ({ ...prev, vehicleId: '' }));
+    // If we're selecting a route, auto-fill source and destination
+    if (name === 'routeId') {
+      const selectedRoute = routes.find(route => route.id === value);
+      if (selectedRoute) {
+        setFormData(prev => ({
+          ...prev,
+          source: selectedRoute.source,
+          destination: selectedRoute.destination,
+        }));
+      }
     }
   };
 
@@ -273,6 +223,7 @@ export const useShipments = () => {
       quantityTons: shipment.quantityTons.toString(),
       status: shipment.status,
       departureTime: shipment.departureTime,
+      arrivalTime: shipment.arrivalTime || '',
       remarks: shipment.remarks || '',
     });
     setOpenDialog(true);
@@ -293,8 +244,9 @@ export const useShipments = () => {
       source: '',
       destination: '',
       quantityTons: '',
-      status: 'Scheduled',
-      departureTime: new Date().toISOString().slice(0, 16),
+      status: 'Pending',
+      departureTime: new Date().toISOString(),
+      arrivalTime: '',
       remarks: '',
     });
   };
@@ -309,20 +261,21 @@ export const useShipments = () => {
       source: formData.source,
       destination: formData.destination,
       quantityTons: Number(formData.quantityTons),
-      status: formData.status as Shipment['status'],
+      status: formData.status,
       departureTime: formData.departureTime,
+      arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
     };
     
     if (selectedShipment) {
       // Update existing shipment
       updateShipmentMutation.mutate({
-        ...selectedShipment,
-        ...shipmentData,
+        id: selectedShipment.id,
+        ...shipmentData
       });
     } else {
       // Add new shipment
-      addShipmentMutation.mutate(shipmentData as Omit<Shipment, 'id' | 'transporterName' | 'vehicleNumber' | 'arrivalTime'>);
+      addShipmentMutation.mutate(shipmentData as Omit<Shipment, 'id'>);
     }
   };
 
@@ -339,8 +292,6 @@ export const useShipments = () => {
     setOpenDialog,
     selectedShipment,
     formData,
-    transporters,
-    availableVehicles,
     handleInputChange,
     handleSelectChange,
     handleEditShipment,
@@ -349,5 +300,8 @@ export const useShipments = () => {
     handleDeleteShipment,
     isSubmitting: addShipmentMutation.isPending || updateShipmentMutation.isPending,
     isDeleting: deleteShipmentMutation.isPending,
+    transporters,
+    vehicles,
+    routes,
   };
 };

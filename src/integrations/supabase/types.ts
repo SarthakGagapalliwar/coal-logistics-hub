@@ -9,7 +9,249 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          phone_number: string | null
+          role: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone_number?: string | null
+          role?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone_number?: string | null
+          role?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      routes: {
+        Row: {
+          billing_rate_per_ton: number
+          created_at: string
+          destination: string
+          distance_km: number
+          estimated_time: number
+          id: string
+          source: string
+          updated_at: string
+          vendor_rate_per_ton: number
+        }
+        Insert: {
+          billing_rate_per_ton: number
+          created_at?: string
+          destination: string
+          distance_km: number
+          estimated_time?: number
+          id?: string
+          source: string
+          updated_at?: string
+          vendor_rate_per_ton: number
+        }
+        Update: {
+          billing_rate_per_ton?: number
+          created_at?: string
+          destination?: string
+          distance_km?: number
+          estimated_time?: number
+          id?: string
+          source?: string
+          updated_at?: string
+          vendor_rate_per_ton?: number
+        }
+        Relationships: []
+      }
+      shipments: {
+        Row: {
+          arrival_time: string | null
+          created_at: string
+          departure_time: string
+          destination: string
+          id: string
+          quantity_tons: number
+          remarks: string | null
+          route_id: string | null
+          source: string
+          status: string
+          transporter_id: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time: string
+          destination: string
+          id?: string
+          quantity_tons: number
+          remarks?: string | null
+          route_id?: string | null
+          source: string
+          status?: string
+          transporter_id: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string
+          destination?: string
+          id?: string
+          quantity_tons?: number
+          remarks?: string | null
+          route_id?: string | null
+          source?: string
+          status?: string
+          transporter_id?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipments_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_transporter_id_fkey"
+            columns: ["transporter_id"]
+            isOneToOne: false
+            referencedRelation: "transporters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transporters: {
+        Row: {
+          address: string
+          contact_number: string
+          contact_person: string
+          created_at: string
+          gstn: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          contact_number: string
+          contact_person: string
+          created_at?: string
+          gstn: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          contact_number?: string
+          contact_person?: string
+          created_at?: string
+          gstn?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          shipment_updates: boolean
+          sms_notifications: boolean
+          system_announcements: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          shipment_updates?: boolean
+          sms_notifications?: boolean
+          system_announcements?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          shipment_updates?: boolean
+          sms_notifications?: boolean
+          system_announcements?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          capacity: number
+          created_at: string
+          id: string
+          last_maintenance: string | null
+          status: string
+          transporter_id: string
+          updated_at: string
+          vehicle_number: string
+          vehicle_type: string
+        }
+        Insert: {
+          capacity: number
+          created_at?: string
+          id?: string
+          last_maintenance?: string | null
+          status?: string
+          transporter_id: string
+          updated_at?: string
+          vehicle_number: string
+          vehicle_type: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          last_maintenance?: string | null
+          status?: string
+          transporter_id?: string
+          updated_at?: string
+          vehicle_number?: string
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_transporter_id_fkey"
+            columns: ["transporter_id"]
+            isOneToOne: false
+            referencedRelation: "transporters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

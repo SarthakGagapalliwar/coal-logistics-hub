@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import PageTransition from '@/components/ui-custom/PageTransition';
 import DataTable from '@/components/ui-custom/DataTable';
-import { vehicles, Vehicle, transporters } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,67 +29,40 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Plus, Edit, Trash, Truck } from 'lucide-react';
+import { Plus, Edit, Trash, Truck, Calendar } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from 'sonner';
-import { formatDate } from '@/lib/data';
+import { format } from 'date-fns';
+import { useVehicles } from '@/hooks/use-vehicles';
 
 const Vehicles = () => {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const {
+    vehicles,
+    isLoading,
+    openDialog,
+    setOpenDialog,
+    selectedVehicle,
+    formData,
+    handleInputChange,
+    handleSelectChange,
+    handleEditVehicle,
+    handleAddVehicle,
+    handleSubmit,
+    handleDeleteVehicle,
+    isSubmitting,
+    isDeleting,
+    transporters,
+  } = useVehicles();
+  
   const isMobile = useIsMobile();
   
-  // Form state
-  const [formData, setFormData] = useState({
-    transporterId: '',
-    vehicleNumber: '',
-    vehicleType: 'Truck',
-    capacity: '',
-    status: 'Available',
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditVehicle = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
-    setFormData({
-      transporterId: vehicle.transporterId,
-      vehicleNumber: vehicle.vehicleNumber,
-      vehicleType: vehicle.vehicleType,
-      capacity: vehicle.capacity.toString(),
-      status: vehicle.status,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleAddVehicle = () => {
-    setSelectedVehicle(null);
-    setFormData({
-      transporterId: '',
-      vehicleNumber: '',
-      vehicleType: 'Truck',
-      capacity: '',
-      status: 'Available',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This would typically send data to your backend
-    toast.success(
-      selectedVehicle 
-        ? `Vehicle "${formData.vehicleNumber}" updated successfully` 
-        : `Vehicle "${formData.vehicleNumber}" added successfully`
-    );
-    setOpenDialog(false);
+  // Helper function to format dates
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy');
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   // Columns for the data table
@@ -114,12 +86,12 @@ const Vehicles = () => {
     {
       header: 'Capacity',
       accessorKey: 'capacity',
-      cell: (row: Vehicle) => `${row.capacity} tons`,
+      cell: (row: any) => `${row.capacity} tons`,
     },
     {
       header: 'Status',
       accessorKey: 'status',
-      cell: (row: Vehicle) => (
+      cell: (row: any) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
           row.status === 'Available' ? 'bg-green-100 text-green-800' :
           row.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
@@ -132,12 +104,12 @@ const Vehicles = () => {
     {
       header: 'Last Maintenance',
       accessorKey: 'lastMaintenance',
-      cell: (row: Vehicle) => formatDate(row.lastMaintenance),
+      cell: (row: any) => formatDate(row.lastMaintenance),
     },
     {
       header: 'Actions',
       accessorKey: 'actions',
-      cell: (row: Vehicle) => (
+      cell: (row: any) => (
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
@@ -150,7 +122,8 @@ const Vehicles = () => {
             variant="outline" 
             size="icon"
             className="text-destructive hover:text-destructive"
-            onClick={() => toast.info(`Delete functionality would remove ${row.vehicleNumber}`)}
+            onClick={() => handleDeleteVehicle(row.id)}
+            disabled={isDeleting}
           >
             <Trash className="h-4 w-4" />
           </Button>
@@ -193,12 +166,18 @@ const Vehicles = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable
-                data={vehicles}
-                columns={mobileColumns}
-                searchKey="vehicleNumber"
-                searchPlaceholder="Search by vehicle number..."
-              />
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <DataTable
+                  data={vehicles}
+                  columns={mobileColumns}
+                  searchKey="vehicleNumber"
+                  searchPlaceholder="Search by vehicle number..."
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -272,16 +251,20 @@ const Vehicles = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="capacity">Capacity (tons)</Label>
-                    <Input
-                      id="capacity"
-                      name="capacity"
-                      type="number"
-                      min="1"
-                      placeholder="Enter capacity in tons"
-                      value={formData.capacity}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="capacity"
+                        name="capacity"
+                        type="number"
+                        min="1"
+                        placeholder="Enter capacity in tons"
+                        className="pl-10"
+                        value={formData.capacity}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -307,8 +290,15 @@ const Vehicles = () => {
                   <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    {selectedVehicle ? 'Update' : 'Add'} Vehicle
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
+                        {selectedVehicle ? 'Updating...' : 'Adding...'}
+                      </>
+                    ) : (
+                      <>{selectedVehicle ? 'Update' : 'Add'} Vehicle</>
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
