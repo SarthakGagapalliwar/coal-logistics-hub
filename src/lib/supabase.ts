@@ -31,19 +31,61 @@ const createMockClient = () => {
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
     },
-    from: (table) => ({
-      select: () => ({ 
-        eq: () => ({ 
-          single: () => Promise.resolve({ data: { role: 'user', username: 'mock-user' }, error: null }) 
-        }),
-        data: [], 
-        error: null 
-      }),
-      insert: () => Promise.resolve({ data: [], error: null }),
-      update: () => Promise.resolve({ data: [], error: null }),
-      delete: () => Promise.resolve({ data: [], error: null }),
-      eq: () => Promise.resolve({ data: [], error: null }),
-    }),
+    from: (table) => {
+      // Create a chainable API for mock data operations
+      const chainObj = {
+        select: () => {
+          return {
+            eq: () => ({
+              single: () => Promise.resolve({ 
+                data: { role: 'user', username: 'mock-user' }, 
+                error: null 
+              })
+            }),
+            order: () => chainObj,
+            data: [],
+            error: null
+          }
+        },
+        insert: (data) => {
+          // Add chainable select method to insert
+          const insertObj = {
+            select: () => insertObj,
+            single: () => Promise.resolve({ 
+              data: { 
+                id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
+                ...data,
+                created_at: new Date().toISOString()
+              }, 
+              error: null 
+            }),
+            data: null,
+            error: null
+          };
+          return insertObj;
+        },
+        update: (data) => {
+          return {
+            eq: () => Promise.resolve({ 
+              data: { id: 'mock-id', ...data }, 
+              error: null 
+            }),
+            data: null,
+            error: null
+          }
+        },
+        delete: () => {
+          return {
+            eq: () => Promise.resolve({ data: null, error: null }),
+            data: null,
+            error: null
+          }
+        },
+        eq: () => Promise.resolve({ data: [], error: null }),
+      };
+      
+      return chainObj;
+    },
     rpc: () => Promise.resolve({ data: [], error: null }),
   };
 };

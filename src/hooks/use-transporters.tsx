@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbTransporter, handleSupabaseError } from '@/lib/supabase';
@@ -70,17 +69,34 @@ export const useTransporters = () => {
   // Mutation to add a new transporter
   const addTransporterMutation = useMutation({
     mutationFn: async (transporter: Omit<Transporter, 'id'>) => {
-      const { data, error } = await supabase
-        .from('transporters')
-        .insert(appToDbTransporter(transporter))
-        .select()
-        .single();
-      
-      if (error) {
-        throw new Error(error.message);
+      try {
+        const { data, error } = await supabase
+          .from('transporters')
+          .insert(appToDbTransporter(transporter))
+          .select()
+          .single();
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        // If we're using the mock client, generate a fake response if data is null
+        if (!data && isDevelopment()) {
+          return {
+            id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
+            name: transporter.name,
+            gstn: transporter.gstn,
+            contactPerson: transporter.contactPerson,
+            contactNumber: transporter.contactNumber,
+            address: transporter.address,
+          } as Transporter;
+        }
+        
+        return dbToAppTransporter(data as DbTransporter);
+      } catch (error) {
+        console.error('Error adding transporter:', error);
+        throw error;
       }
-      
-      return dbToAppTransporter(data as DbTransporter);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transporters'] });
@@ -92,6 +108,11 @@ export const useTransporters = () => {
       toast.error(`Failed to add transporter: ${error.message}`);
     }
   });
+
+  // Helper function to check if we're in development mode
+  const isDevelopment = () => {
+    return import.meta.env.MODE === 'development';
+  };
 
   // Mutation to update a transporter
   const updateTransporterMutation = useMutation({
