@@ -8,6 +8,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Check if we're in development mode
 const isDevelopment = import.meta.env.MODE === 'development';
 
+// Mock data storage for development
+const mockStorage = {
+  transporters: [],
+  vehicles: [],
+  routes: [],
+  shipments: []
+};
+
 // Create a mock client for development if variables are missing
 const createMockClient = () => {
   console.warn('Using mock Supabase client. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for a real connection.');
@@ -34,49 +42,97 @@ const createMockClient = () => {
     from: (table) => {
       // Create a chainable API for mock data operations
       const chainObj = {
-        select: () => {
+        select: (columns = '*') => {
+          console.log(`[MOCK] Selecting from ${table}`);
+          
+          const mockData = mockStorage[table] || [];
+          console.log(`[MOCK] Returning ${mockData.length} items from ${table}`);
+          
           return {
-            eq: () => ({
-              single: () => Promise.resolve({ 
-                data: { role: 'user', username: 'mock-user' }, 
-                error: null 
-              })
+            eq: (column, value) => ({
+              single: () => {
+                const item = mockData.find(item => item[column] === value);
+                return Promise.resolve({ 
+                  data: item || null, 
+                  error: item ? null : { message: 'No data found' } 
+                });
+              },
+              data: mockData.filter(item => item[column] === value),
+              error: null
             }),
             order: () => chainObj,
-            data: [],
+            data: mockData,
             error: null
           }
         },
         insert: (data) => {
+          console.log(`[MOCK] Inserting into ${table}:`, data);
+          
+          // Generate a mock ID if not provided
+          const newItem = { 
+            id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
+            ...data,
+            created_at: new Date().toISOString()
+          };
+          
+          // Add to mock storage
+          if (!mockStorage[table]) {
+            mockStorage[table] = [];
+          }
+          mockStorage[table].push(newItem);
+          
+          console.log(`[MOCK] ${table} now has ${mockStorage[table].length} items`);
+          
           // Add chainable select method to insert
           const insertObj = {
             select: () => insertObj,
             single: () => Promise.resolve({ 
-              data: { 
-                id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
-                ...data,
-                created_at: new Date().toISOString()
-              }, 
+              data: newItem, 
               error: null 
             }),
-            data: null,
+            data: newItem,
             error: null
           };
           return insertObj;
         },
         update: (data) => {
           return {
-            eq: () => Promise.resolve({ 
-              data: { id: 'mock-id', ...data }, 
-              error: null 
-            }),
+            eq: (column, value) => {
+              console.log(`[MOCK] Updating ${table} where ${column} = ${value}:`, data);
+              
+              if (mockStorage[table]) {
+                const index = mockStorage[table].findIndex(item => item[column] === value);
+                if (index >= 0) {
+                  mockStorage[table][index] = { 
+                    ...mockStorage[table][index], 
+                    ...data,
+                    updated_at: new Date().toISOString()
+                  };
+                }
+              }
+              
+              return Promise.resolve({ 
+                data: data, 
+                error: null 
+              });
+            },
             data: null,
             error: null
           }
         },
         delete: () => {
           return {
-            eq: () => Promise.resolve({ data: null, error: null }),
+            eq: (column, value) => {
+              console.log(`[MOCK] Deleting from ${table} where ${column} = ${value}`);
+              
+              if (mockStorage[table]) {
+                const initialLength = mockStorage[table].length;
+                mockStorage[table] = mockStorage[table].filter(item => item[column] !== value);
+                console.log(`[MOCK] Deleted ${initialLength - mockStorage[table].length} items`);
+              }
+              
+              return Promise.resolve({ data: null, error: null });
+            },
             data: null,
             error: null
           }
@@ -147,6 +203,6 @@ export type DbShipment = {
   status: string;
   departure_time: string;
   arrival_time: string | null;
-  remarks?: string; // Added this field
+  remarks?: string;
   created_at: string;
 };

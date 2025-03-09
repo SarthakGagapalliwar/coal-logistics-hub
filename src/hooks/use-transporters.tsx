@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbTransporter, handleSupabaseError } from '@/lib/supabase';
@@ -49,19 +50,23 @@ export const useTransporters = () => {
   const { 
     data: transporters = [], 
     isLoading, 
-    error 
+    error,
+    refetch 
   } = useQuery({
     queryKey: ['transporters'],
     queryFn: async () => {
+      console.log('Fetching transporters...');
       const { data, error } = await supabase
         .from('transporters')
         .select('*')
         .order('name');
       
       if (error) {
+        console.error('Error fetching transporters:', error);
         throw new Error(error.message);
       }
       
+      console.log('Transporters fetched:', data);
       return (data as DbTransporter[]).map(dbToAppTransporter);
     }
   });
@@ -69,6 +74,7 @@ export const useTransporters = () => {
   // Mutation to add a new transporter
   const addTransporterMutation = useMutation({
     mutationFn: async (transporter: Omit<Transporter, 'id'>) => {
+      console.log('Adding transporter:', transporter);
       try {
         const { data, error } = await supabase
           .from('transporters')
@@ -77,21 +83,11 @@ export const useTransporters = () => {
           .single();
         
         if (error) {
+          console.error('Error in supabase insert:', error);
           throw new Error(error.message);
         }
         
-        // If we're using the mock client, generate a fake response if data is null
-        if (!data && isDevelopment()) {
-          return {
-            id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
-            name: transporter.name,
-            gstn: transporter.gstn,
-            contactPerson: transporter.contactPerson,
-            contactNumber: transporter.contactNumber,
-            address: transporter.address,
-          } as Transporter;
-        }
-        
+        console.log('Transporter added, response:', data);
         return dbToAppTransporter(data as DbTransporter);
       } catch (error) {
         console.error('Error adding transporter:', error);
@@ -103,26 +99,26 @@ export const useTransporters = () => {
       toast.success(`Transporter "${formData.name}" added successfully`);
       setOpenDialog(false);
       resetForm();
+      // Force a refetch
+      refetch();
     },
     onError: (error: Error) => {
+      console.error('Mutation error:', error);
       toast.error(`Failed to add transporter: ${error.message}`);
     }
   });
 
-  // Helper function to check if we're in development mode
-  const isDevelopment = () => {
-    return import.meta.env.MODE === 'development';
-  };
-
   // Mutation to update a transporter
   const updateTransporterMutation = useMutation({
     mutationFn: async (transporter: Transporter) => {
+      console.log('Updating transporter:', transporter);
       const { error } = await supabase
         .from('transporters')
         .update(appToDbTransporter(transporter))
         .eq('id', transporter.id);
       
       if (error) {
+        console.error('Error updating transporter:', error);
         throw new Error(error.message);
       }
       
@@ -133,6 +129,8 @@ export const useTransporters = () => {
       toast.success(`Transporter "${transporter.name}" updated successfully`);
       setOpenDialog(false);
       resetForm();
+      // Force a refetch
+      refetch();
     },
     onError: (error: Error) => {
       toast.error(`Failed to update transporter: ${error.message}`);
@@ -142,12 +140,14 @@ export const useTransporters = () => {
   // Mutation to delete a transporter
   const deleteTransporterMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('Deleting transporter:', id);
       const { error } = await supabase
         .from('transporters')
         .delete()
         .eq('id', id);
       
       if (error) {
+        console.error('Error deleting transporter:', error);
         throw new Error(error.message);
       }
       
@@ -155,13 +155,17 @@ export const useTransporters = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['transporters'] });
-      toast.success('Transporter deleted successfully');
       
       // Find the deleted transporter's name for the success message
       const deletedTransporter = transporters.find(t => t.id === variables);
       if (deletedTransporter) {
         toast.success(`Transporter "${deletedTransporter.name}" deleted successfully`);
+      } else {
+        toast.success('Transporter deleted successfully');
       }
+      
+      // Force a refetch
+      refetch();
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete transporter: ${error.message}`);
