@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
@@ -52,7 +53,7 @@ const RoutesPage = () => {
     },
     {
       header: 'Origin',
-      accessorKey: 'origin',
+      accessorKey: 'source',
     },
     {
       header: 'Destination',
@@ -60,7 +61,7 @@ const RoutesPage = () => {
     },
     {
       header: 'Distance (km)',
-      accessorKey: 'distanceKilometers',
+      accessorKey: 'distanceKm',
     },
     {
       header: 'Billing Rate (₹/ton)',
@@ -138,7 +139,7 @@ const RoutesPage = () => {
                 <DataTable
                   data={routes}
                   columns={mobileColumns}
-                  searchKey="origin"
+                  searchKey="source"
                   searchPlaceholder="Search routes..."
                 />
               )}
@@ -159,15 +160,15 @@ const RoutesPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="origin">Origin</Label>
+                    <Label htmlFor="source">Origin</Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
-                        id="origin"
-                        name="origin"
+                        id="source"
+                        name="source"
                         placeholder="Enter origin location"
                         className="pl-10"
-                        value={formData.origin}
+                        value={formData.source}
                         onChange={handleInputChange}
                         required
                       />
@@ -191,16 +192,16 @@ const RoutesPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="distanceKilometers">Distance (km)</Label>
+                    <Label htmlFor="distanceKm">Distance (km)</Label>
                     <div className="relative">
                       <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
-                        id="distanceKilometers"
-                        name="distanceKilometers"
+                        id="distanceKm"
+                        name="distanceKm"
                         type="number"
                         placeholder="Enter distance in kilometers"
                         className="pl-10"
-                        value={formData.distanceKilometers}
+                        value={formData.distanceKm}
                         onChange={handleInputChange}
                         required
                       />
