@@ -1,145 +1,170 @@
-
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // These environment variables are automatically injected by the Supabase integration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = "https://oeoklsspynwktggvrrcm.supabase.co";
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lb2tsc3NweW53a3RnZ3ZycmNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzMzg5MjYsImV4cCI6MjA1NjkxNDkyNn0.dLYGPxN31HA4GFc-LNWfa_GmjgnJE32FCbNcr9xP3u8";
 
 // Check if we're in development mode
-const isDevelopment = import.meta.env.MODE === 'development';
+const isDevelopment = import.meta.env.MODE === "development";
 
 // Mock data storage for development
 const mockStorage = {
   transporters: [],
   vehicles: [],
   routes: [],
-  shipments: []
+  shipments: [],
 };
 
 // Create a mock client for development if variables are missing
 const createMockClient = () => {
-  console.warn('Using mock Supabase client. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for a real connection.');
-  
+  console.warn(
+    "Using mock Supabase client. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for a real connection."
+  );
+
   // Return a mock client with the same interface but no real operations
   return {
     auth: {
-      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-      signUp: ({ email, password }) => Promise.resolve({ 
-        data: { user: { id: 'mock-user-id', email } }, 
-        error: null 
-      }),
-      signInWithPassword: () => Promise.resolve({ 
-        data: { user: { id: 'mock-user-id', email: 'mock@example.com' } }, 
-        error: null 
-      }),
+      getSession: () =>
+        Promise.resolve({ data: { session: null }, error: null }),
+      signUp: ({ email, password }) =>
+        Promise.resolve({
+          data: { user: { id: "mock-user-id", email } },
+          error: null,
+        }),
+      signInWithPassword: () =>
+        Promise.resolve({
+          data: { user: { id: "mock-user-id", email: "mock@example.com" } },
+          error: null,
+        }),
       signOut: () => Promise.resolve({ error: null }),
       onAuthStateChange: (callback) => {
         // Call callback once with a fake signed-in session
-        callback('SIGNED_IN', { user: { id: 'mock-user-id', email: 'mock@example.com' } });
+        callback("SIGNED_IN", {
+          user: { id: "mock-user-id", email: "mock@example.com" },
+        });
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
     },
     from: (table) => {
       // Create a chainable API for mock data operations
       const chainObj = {
-        select: (columns = '*') => {
+        select: (columns = "*") => {
           console.log(`[MOCK] Selecting from ${table}`);
-          
+
           const mockData = mockStorage[table] || [];
-          console.log(`[MOCK] Returning ${mockData.length} items from ${table}`);
-          
+          console.log(
+            `[MOCK] Returning ${mockData.length} items from ${table}`
+          );
+
           return {
             eq: (column, value) => ({
               single: () => {
-                const item = mockData.find(item => item[column] === value);
-                return Promise.resolve({ 
-                  data: item || null, 
-                  error: item ? null : { message: 'No data found' } 
+                const item = mockData.find((item) => item[column] === value);
+                return Promise.resolve({
+                  data: item || null,
+                  error: item ? null : { message: "No data found" },
                 });
               },
-              data: mockData.filter(item => item[column] === value),
-              error: null
+              data: mockData.filter((item) => item[column] === value),
+              error: null,
             }),
             order: () => chainObj,
             data: mockData,
-            error: null
-          }
+            error: null,
+          };
         },
         insert: (data) => {
           console.log(`[MOCK] Inserting into ${table}:`, data);
-          
+
           // Generate a mock ID if not provided
-          const newItem = { 
-            id: 'mock-id-' + Math.random().toString(36).substring(2, 10),
+          const newItem = {
+            id: "mock-id-" + Math.random().toString(36).substring(2, 10),
             ...data,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           };
-          
+
           // Add to mock storage
           if (!mockStorage[table]) {
             mockStorage[table] = [];
           }
           mockStorage[table].push(newItem);
-          
-          console.log(`[MOCK] ${table} now has ${mockStorage[table].length} items`);
-          
+
+          console.log(
+            `[MOCK] ${table} now has ${mockStorage[table].length} items`
+          );
+
           // Add chainable select method to insert
           const insertObj = {
             select: () => insertObj,
-            single: () => Promise.resolve({ 
-              data: newItem, 
-              error: null 
-            }),
+            single: () =>
+              Promise.resolve({
+                data: newItem,
+                error: null,
+              }),
             data: newItem,
-            error: null
+            error: null,
           };
           return insertObj;
         },
         update: (data) => {
           return {
             eq: (column, value) => {
-              console.log(`[MOCK] Updating ${table} where ${column} = ${value}:`, data);
-              
+              console.log(
+                `[MOCK] Updating ${table} where ${column} = ${value}:`,
+                data
+              );
+
               if (mockStorage[table]) {
-                const index = mockStorage[table].findIndex(item => item[column] === value);
+                const index = mockStorage[table].findIndex(
+                  (item) => item[column] === value
+                );
                 if (index >= 0) {
-                  mockStorage[table][index] = { 
-                    ...mockStorage[table][index], 
+                  mockStorage[table][index] = {
+                    ...mockStorage[table][index],
                     ...data,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
                   };
                 }
               }
-              
-              return Promise.resolve({ 
-                data: data, 
-                error: null 
+
+              return Promise.resolve({
+                data: data,
+                error: null,
               });
             },
             data: null,
-            error: null
-          }
+            error: null,
+          };
         },
         delete: () => {
           return {
             eq: (column, value) => {
-              console.log(`[MOCK] Deleting from ${table} where ${column} = ${value}`);
-              
+              console.log(
+                `[MOCK] Deleting from ${table} where ${column} = ${value}`
+              );
+
               if (mockStorage[table]) {
                 const initialLength = mockStorage[table].length;
-                mockStorage[table] = mockStorage[table].filter(item => item[column] !== value);
-                console.log(`[MOCK] Deleted ${initialLength - mockStorage[table].length} items`);
+                mockStorage[table] = mockStorage[table].filter(
+                  (item) => item[column] !== value
+                );
+                console.log(
+                  `[MOCK] Deleted ${
+                    initialLength - mockStorage[table].length
+                  } items`
+                );
               }
-              
+
               return Promise.resolve({ data: null, error: null });
             },
             data: null,
-            error: null
-          }
+            error: null,
+          };
         },
         eq: () => Promise.resolve({ data: [], error: null }),
       };
-      
+
       return chainObj;
     },
     rpc: () => Promise.resolve({ data: [], error: null }),
@@ -147,14 +172,15 @@ const createMockClient = () => {
 };
 
 // Initialize the Supabase client
-export const supabase = (!supabaseUrl || !supabaseAnonKey) && isDevelopment
-  ? createMockClient() as any
-  : createClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase =
+  (!supabaseUrl || !supabaseAnonKey) && isDevelopment
+    ? (createMockClient() as any)
+    : createClient(supabaseUrl || "", supabaseAnonKey || "");
 
 // Helper function to handle Supabase errors consistently
 export const handleSupabaseError = (error: Error | null) => {
   if (error) {
-    console.error('Supabase error:', error);
+    console.error("Supabase error:", error);
     return error.message;
   }
   return null;
