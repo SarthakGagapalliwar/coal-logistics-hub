@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -41,7 +40,10 @@ export const useAnalytics = () => {
         .from('shipments')
         .select(`
           *,
-          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
+          route:route_id (
+            billing_rate_per_ton,
+            vendor_rate_per_ton
+          )
         `);
       
       if (shipmentsError) {
@@ -83,16 +85,17 @@ export const useAnalytics = () => {
       let currentMonthShipments = 0;
       let previousMonthShipments = 0;
       
-      console.log('Processing shipments for revenue data:', shipments.length);
-      shipments.forEach((shipment) => {
-        // Skip if missing essential data or routes information
-        if (!shipment.quantity_tons || !shipment.routes) {
+      console.log('Processing shipments for revenue data:', shipments?.length);
+      
+      shipments?.forEach((shipment) => {
+        // Skip if missing essential data or route information
+        if (!shipment.quantity_tons || !shipment.route) {
           console.log('Skipping shipment due to missing data:', shipment.id);
           return;
         }
         
-        const billingRate = shipment.routes?.billing_rate_per_ton || 0;
-        const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
+        const billingRate = shipment.route?.billing_rate_per_ton || 0;
+        const vendorRate = shipment.route?.vendor_rate_per_ton || 0;
         
         // Calculate financial metrics
         const revenue = parseFloat((shipment.quantity_tons * billingRate).toFixed(2));
