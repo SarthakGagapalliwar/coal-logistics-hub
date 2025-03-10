@@ -83,15 +83,23 @@ export const useAnalytics = () => {
       let currentMonthShipments = 0;
       let previousMonthShipments = 0;
       
+      console.log('Processing shipments for revenue data:', shipments.length);
       shipments.forEach((shipment) => {
-        // Skip if missing essential data
-        if (!shipment.quantity_tons) return;
+        // Skip if missing essential data or routes information
+        if (!shipment.quantity_tons || !shipment.routes) {
+          console.log('Skipping shipment due to missing data:', shipment.id);
+          return;
+        }
         
         const billingRate = shipment.routes?.billing_rate_per_ton || 0;
         const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
-        const revenue = shipment.quantity_tons * billingRate;
-        const cost = shipment.quantity_tons * vendorRate;
-        const profit = revenue - cost;
+        
+        // Calculate financial metrics
+        const revenue = parseFloat((shipment.quantity_tons * billingRate).toFixed(2));
+        const cost = parseFloat((shipment.quantity_tons * vendorRate).toFixed(2));
+        const profit = parseFloat((revenue - cost).toFixed(2));
+        
+        console.log(`Shipment ${shipment.id} - Revenue: ${revenue}, Cost: ${cost}, Profit: ${profit}`);
         
         // Get the month from the shipment's creation date
         const date = new Date(shipment.created_at);
@@ -127,6 +135,8 @@ export const useAnalytics = () => {
       const revenueData = Object.values(monthlyData).sort((a, b) => 
         monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
       );
+      
+      console.log('Processed revenue data:', revenueData);
       
       // Count shipments by status - Using proper casing
       const statusCounts: Record<string, number> = {
