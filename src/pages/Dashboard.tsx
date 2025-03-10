@@ -1,3 +1,4 @@
+
 import React from "react";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import DashboardCard from "@/components/ui-custom/DashboardCard";
@@ -19,12 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  dashboardStats,
-  shipments,
-  formatCurrency,
-  formatDate,
-} from "@/lib/data";
+import { formatCurrency, formatDate, shipments } from "@/lib/data";
 import { motion } from "framer-motion";
 import {
   CartesianGrid,
@@ -39,27 +35,13 @@ import {
 } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-
-// Mock chart data
-const revenueData = [
-  { month: "Jan", revenue: 950000, cost: 750000 },
-  { month: "Feb", revenue: 1050000, cost: 820000 },
-  { month: "Mar", revenue: 1200000, cost: 900000 },
-  { month: "Apr", revenue: 1100000, cost: 850000 },
-  { month: "May", revenue: 1150000, cost: 870000 },
-  { month: "Jun", revenue: 1250000, cost: 950000 },
-];
-
-const shipmentData = [
-  { week: "W1", count: 25 },
-  { week: "W2", count: 30 },
-  { week: "W3", count: 28 },
-  { week: "W4", count: 35 },
-];
+import { useAnalytics } from "@/hooks/use-analytics";
+import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const { revenueData, weeklyShipmentData, dashboardStats, isLoading, error } = useAnalytics();
 
   // Responsive columns for shipment table
   const shipmentColumns = [
@@ -129,6 +111,33 @@ const Dashboard = () => {
     }),
   };
 
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="container py-6 flex justify-center items-center h-[80vh]">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading dashboard data...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="container py-6 flex justify-center items-center h-[80vh]">
+          <div className="text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
+            <p className="text-destructive font-medium">Error loading dashboard data</p>
+            <p className="text-muted-foreground">{(error as Error).message}</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <PageTransition>
@@ -147,7 +156,7 @@ const Dashboard = () => {
               value={dashboardStats.activeShipments}
               icon={<Package size={24} />}
               description="Currently in transit"
-              trend={{ value: dashboardStats.shipmentTrend, isPositive: true }}
+              trend={{ value: dashboardStats.shipmentTrend, isPositive: dashboardStats.shipmentTrend >= 0 }}
             />
 
             <DashboardCard
@@ -169,7 +178,7 @@ const Dashboard = () => {
               value={formatCurrency(dashboardStats.revenueThisMonth)}
               icon={<TrendingUp size={24} />}
               description="Current month"
-              trend={{ value: dashboardStats.revenueTrend, isPositive: true }}
+              trend={{ value: dashboardStats.revenueTrend, isPositive: dashboardStats.revenueTrend >= 0 }}
             />
           </div>
 
@@ -187,45 +196,51 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={revenueData}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis dataKey="month" />
-                        <YAxis
-                          tickFormatter={(value) =>
-                            `₹${(value / 100000).toFixed(1)}L`
-                          }
-                        />
-                        <Tooltip
-                          formatter={(value) => [
-                            `₹${(value as number).toLocaleString()}`,
-                            "",
-                          ]}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="revenue"
-                          name="Revenue"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="cost"
-                          name="Cost"
-                          stroke="hsl(var(--secondary-foreground))"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
-                          strokeDasharray="5 5"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {revenueData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={revenueData}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis dataKey="month" />
+                          <YAxis
+                            tickFormatter={(value) =>
+                              `₹${(value / 1000).toFixed(0)}K`
+                            }
+                          />
+                          <Tooltip
+                            formatter={(value) => [
+                              `₹${(value as number).toLocaleString()}`,
+                              "",
+                            ]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="revenue"
+                            name="Revenue"
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{ r: 6 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="cost"
+                            name="Cost"
+                            stroke="hsl(var(--secondary-foreground))"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{ r: 6 }}
+                            strokeDasharray="5 5"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex justify-center items-center h-full">
+                        <p className="text-muted-foreground">No revenue data available</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -246,23 +261,29 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={shipmentData}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis dataKey="week" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar
-                          dataKey="count"
-                          name="Shipments"
-                          fill="hsl(var(--primary))"
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {weeklyShipmentData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={weeklyShipmentData}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis dataKey="week" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar
+                            dataKey="count"
+                            name="Shipments"
+                            fill="hsl(var(--primary))"
+                            radius={[4, 4, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex justify-center items-center h-full">
+                        <p className="text-muted-foreground">No shipment data available</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
