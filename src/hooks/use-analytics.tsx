@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -31,7 +30,6 @@ export interface DashboardStats {
 }
 
 export const useAnalytics = () => {
-  // Fetch all the data we need for analytics
   const { data: analyticsData, isLoading, error } = useQuery({
     queryKey: ['analytics'],
     queryFn: async () => {
@@ -97,7 +95,6 @@ export const useAnalytics = () => {
         // Get the month from the shipment's creation date
         const date = new Date(shipment.created_at);
         const month = date.toLocaleString('default', { month: 'short' });
-        const year = date.getFullYear();
         
         // For trend calculations
         const shipmentMonth = date.toLocaleString('default', { month: 'short' });
@@ -109,7 +106,7 @@ export const useAnalytics = () => {
           previousMonthShipments++;
         }
         
-        // Initialize the month data if it doesn't exist
+        // Initialize or update the month data
         if (!monthlyData[month]) {
           monthlyData[month] = {
             month,
@@ -119,7 +116,6 @@ export const useAnalytics = () => {
           };
         }
         
-        // Add the shipment's financial data to the month
         monthlyData[month].revenue += revenue;
         monthlyData[month].cost += cost;
         monthlyData[month].profit += profit;
@@ -131,17 +127,28 @@ export const useAnalytics = () => {
         monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
       );
       
-      // Count shipments by status
-      const statusCounts: Record<string, number> = {};
+      // Count shipments by status - Fixed to use proper status values
+      const statusCounts: Record<string, number> = {
+        'Completed': 0,
+        'In Transit': 0,
+        'Pending': 0,
+        'Cancelled': 0
+      };
+      
       shipments.forEach((shipment) => {
-        const status = shipment.status || 'Unknown';
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
+        // Ensure status is properly capitalized
+        const status = shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1).toLowerCase();
+        if (statusCounts[status] !== undefined) {
+          statusCounts[status]++;
+        }
       });
       
-      const shipmentStatusData = Object.entries(statusCounts).map(([status, count]) => ({
-        status,
-        count,
-      }));
+      const shipmentStatusData = Object.entries(statusCounts)
+        .filter(([_, count]) => count > 0)
+        .map(([status, count]) => ({
+          status,
+          count,
+        }));
       
       // Calculate weekly shipment counts for the current month
       const weeklyShipments: Record<string, number> = {
@@ -185,8 +192,10 @@ export const useAnalytics = () => {
         ? ((currentMonthShipments - previousMonthShipments) / previousMonthShipments) * 100
         : 0;
       
-      // Count active shipments (in_transit status)
-      const activeShipments = shipments.filter(s => s.status === 'in_transit').length;
+      // Calculate active shipments (in_transit status)
+      const activeShipments = shipments.filter(s => 
+        s.status.toLowerCase() === 'in transit'
+      ).length;
       
       const dashboardStats: DashboardStats = {
         activeShipments,

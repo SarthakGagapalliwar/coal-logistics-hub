@@ -1,4 +1,3 @@
-
 import React from "react";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import DashboardCard from "@/components/ui-custom/DashboardCard";
@@ -7,10 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   Truck,
   Package,
-  Map,
   TrendingUp,
-  FileText,
-  Clock,
   AlertTriangle,
 } from "lucide-react";
 import {
@@ -20,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCurrency, formatDate, shipments } from "@/lib/data";
+import { formatCurrency } from "@/lib/data";
 import { motion } from "framer-motion";
 import {
   CartesianGrid,
@@ -37,11 +33,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { Loader2 } from "lucide-react";
+import { useShipments } from "@/hooks/use-shipments";
+import { format } from 'date-fns';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const { revenueData, weeklyShipmentData, dashboardStats, isLoading, error } = useAnalytics();
+  const { revenueData, weeklyShipmentData, dashboardStats, isLoading: isAnalyticsLoading, error: analyticsError } = useAnalytics();
+  const { shipments, isLoading: isShipmentsLoading } = useShipments();
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'MMM d, yyyy HH:mm');
+  };
 
   // Responsive columns for shipment table
   const shipmentColumns = [
@@ -55,7 +59,7 @@ const Dashboard = () => {
     },
     {
       header: "Route",
-      accessorKey: "route",
+      accessorKey: "source",
       cell: (row: any) => `${row.source} → ${row.destination}`,
     },
     {
@@ -69,13 +73,11 @@ const Dashboard = () => {
       cell: (row: any) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.status === "Delivered"
+            row.status === "Completed"
               ? "bg-green-100 text-green-800"
               : row.status === "In Transit"
               ? "bg-blue-100 text-blue-800"
-              : row.status === "Scheduled"
-              ? "bg-purple-100 text-purple-800"
-              : row.status === "Delayed"
+              : row.status === "Pending"
               ? "bg-amber-100 text-amber-800"
               : "bg-red-100 text-red-800"
           }`}
@@ -98,6 +100,11 @@ const Dashboard = () => {
       )
     : shipmentColumns;
 
+  // Get recent shipments (last 5)
+  const recentShipments = [...shipments]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5);
+
   const fadeInUpVariants = {
     initial: { opacity: 0, y: 10 },
     animate: (index: number) => ({
@@ -111,7 +118,7 @@ const Dashboard = () => {
     }),
   };
 
-  if (isLoading) {
+  if (isAnalyticsLoading || isShipmentsLoading) {
     return (
       <DashboardLayout>
         <div className="container py-6 flex justify-center items-center h-[80vh]">
@@ -124,14 +131,14 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
+  if (analyticsError) {
     return (
       <DashboardLayout>
         <div className="container py-6 flex justify-center items-center h-[80vh]">
           <div className="text-center">
             <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
             <p className="text-destructive font-medium">Error loading dashboard data</p>
-            <p className="text-muted-foreground">{(error as Error).message}</p>
+            <p className="text-muted-foreground">{(analyticsError as Error).message}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -304,7 +311,7 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <DataTable
-                    data={shipments}
+                    data={recentShipments}
                     columns={mobileShipmentColumns}
                     searchKey="transporterName"
                     searchPlaceholder="Search by transporter..."
