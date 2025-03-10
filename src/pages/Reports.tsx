@@ -16,8 +16,8 @@ const Reports = () => {
   const totalProfit = totalRevenue - totalCost;
   
   const totalShipments = shipmentStatusData.reduce((sum, item) => sum + item.count, 0);
-  const completedShipments = shipmentStatusData.find(s => s.status === 'completed')?.count || 0;
-  const inTransitShipments = shipmentStatusData.find(s => s.status === 'in_transit')?.count || 0;
+  const completedShipments = shipmentStatusData.find(s => s.status === 'Completed')?.count || 0;
+  const inTransitShipments = shipmentStatusData.find(s => s.status === 'In Transit')?.count || 0;
 
   // For pie chart
   const statusData = [

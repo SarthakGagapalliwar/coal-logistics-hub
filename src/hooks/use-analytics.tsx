@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -127,7 +128,7 @@ export const useAnalytics = () => {
         monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
       );
       
-      // Count shipments by status - Fixed to use proper status values
+      // Count shipments by status - Using proper casing
       const statusCounts: Record<string, number> = {
         'Completed': 0,
         'In Transit': 0,
@@ -136,8 +137,27 @@ export const useAnalytics = () => {
       };
       
       shipments.forEach((shipment) => {
-        // Ensure status is properly capitalized
-        const status = shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1).toLowerCase();
+        // Normalize status to proper casing format
+        let status: string;
+        
+        switch(shipment.status.toLowerCase()) {
+          case 'completed':
+            status = 'Completed';
+            break;
+          case 'in transit':
+          case 'in_transit':
+            status = 'In Transit';
+            break;
+          case 'pending':
+            status = 'Pending';
+            break;
+          case 'cancelled':
+            status = 'Cancelled';
+            break;
+          default:
+            status = shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1).toLowerCase();
+        }
+        
         if (statusCounts[status] !== undefined) {
           statusCounts[status]++;
         }
@@ -194,7 +214,7 @@ export const useAnalytics = () => {
       
       // Calculate active shipments (in_transit status)
       const activeShipments = shipments.filter(s => 
-        s.status.toLowerCase() === 'in transit'
+        s.status.toLowerCase() === 'in transit' || s.status.toLowerCase() === 'in_transit'
       ).length;
       
       const dashboardStats: DashboardStats = {
