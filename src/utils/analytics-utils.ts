@@ -1,4 +1,3 @@
-
 import { RevenueData, ShipmentStatusCount, WeeklyShipmentCount, DashboardStats } from '@/types/analytics';
 import { supabase } from '@/lib/supabase';
 
@@ -82,6 +81,9 @@ export const processFinancialData = (
   
   console.log('Processing shipments for revenue data:', shipments.length);
   
+  // Create a set to keep track of months we've seen
+  const seenMonths = new Set<string>();
+  
   shipments.forEach((shipment) => {
     let routeInfo = null;
     
@@ -117,12 +119,20 @@ export const processFinancialData = (
     
     console.log(`Calculated for shipment ${shipment.id}: revenue=${revenue}, cost=${cost}, profit=${profit}`);
     
-    // Get the month from the shipment's creation date
-    const date = new Date(shipment.created_at);
-    const month = date.toLocaleString('default', { month: 'short' });
+    // Get the month from the shipment's departure_time instead of created_at
+    // as it represents when the service was actually rendered
+    let dateToUse = shipment.departure_time ? new Date(shipment.departure_time) : new Date(shipment.created_at);
+    
+    // If arrival_time exists and it's a completed shipment, use that instead
+    if (shipment.arrival_time && 
+        (shipment.status.toLowerCase() === 'completed' || shipment.status.toLowerCase() === 'delivered')) {
+      dateToUse = new Date(shipment.arrival_time);
+    }
+    
+    const month = dateToUse.toLocaleString('default', { month: 'short' });
     
     // For trend calculations
-    const shipmentMonth = date.toLocaleString('default', { month: 'short' });
+    const shipmentMonth = dateToUse.toLocaleString('default', { month: 'short' });
     if (shipmentMonth === currentMonth) {
       currentMonthRevenue += revenue;
       currentMonthShipments++;
@@ -130,6 +140,9 @@ export const processFinancialData = (
       previousMonthRevenue += revenue;
       previousMonthShipments++;
     }
+    
+    // Add month to seen months
+    seenMonths.add(month);
     
     // Initialize or update the month data
     if (!monthlyData[month]) {
@@ -144,13 +157,39 @@ export const processFinancialData = (
     monthlyData[month].revenue += revenue;
     monthlyData[month].cost += cost;
     monthlyData[month].profit += profit;
+    
+    console.log(`Added financial data to month ${month}: revenue=${revenue}, cost=${cost}, profit=${profit}`);
   });
   
-  // Convert monthly data to array and sort by month
+  // Fill in any missing months in the last 6 months to ensure consistent display
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const revenueData = Object.values(monthlyData).sort((a, b) => 
-    monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
-  );
+  const currentMonthIndex = now.getMonth();
+  
+  for (let i = 5; i >= 0; i--) {
+    const monthIndex = (currentMonthIndex - i + 12) % 12;
+    const month = monthNames[monthIndex];
+    
+    if (!monthlyData[month] && !seenMonths.has(month)) {
+      monthlyData[month] = {
+        month,
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+      };
+    }
+  }
+  
+  // Convert monthly data to array and sort by month in chronological order
+  const revenueData = Object.values(monthlyData).sort((a, b) => {
+    const aIndex = monthNames.indexOf(a.month);
+    const bIndex = monthNames.indexOf(b.month);
+    
+    // Adjust for year boundary (Dec to Jan)
+    const adjustedAIndex = aIndex <= currentMonthIndex ? aIndex : aIndex - 12;
+    const adjustedBIndex = bIndex <= currentMonthIndex ? bIndex : bIndex - 12;
+    
+    return adjustedAIndex - adjustedBIndex;
+  });
   
   console.log('Processed revenue data:', revenueData);
   
@@ -372,7 +411,7 @@ export const fetchAnalyticsData = async () => {
       }
     }
     
-    console.log('Processed revenue data:', revenueData);
+    console.log('Final revenue data being returned:', revenueData);
     
     // Process shipment status data
     const shipmentStatusData = processShipmentStatusData(shipments || []);

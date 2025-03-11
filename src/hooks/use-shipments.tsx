@@ -20,7 +20,7 @@ export interface Shipment {
   departureTime: string;
   arrivalTime: string | null;
   remarks?: string;
-  routeId?: string; // Added routeId property
+  routeId?: string; // Included routeId property
 }
 
 // Convert DB format to app format
