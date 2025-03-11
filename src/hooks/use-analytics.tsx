@@ -2,14 +2,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAnalyticsData } from '@/utils/analytics-utils';
-import { 
+import type { 
   RevenueData, 
   ShipmentStatusCount, 
   WeeklyShipmentCount, 
   DashboardStats 
 } from '@/types/analytics';
 
-export { 
+export type { 
   RevenueData, 
   ShipmentStatusCount, 
   WeeklyShipmentCount, 

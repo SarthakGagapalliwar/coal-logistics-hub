@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -102,9 +103,25 @@ export const useShipments = () => {
   // Mutation to add a new shipment
   const addShipmentMutation = useMutation({
     mutationFn: async (shipment: Omit<Shipment, 'id'>) => {
+      // Find route_id by source and destination if not provided
+      let shipmentData = appToDbShipment(shipment);
+      
+      // If we have source and destination but no route_id, try to find a matching route
+      if (!shipmentData.route_id && shipment.source && shipment.destination) {
+        const matchingRoute = routes.find(route => 
+          route.source.toLowerCase() === shipment.source.toLowerCase() && 
+          route.destination.toLowerCase() === shipment.destination.toLowerCase()
+        );
+        
+        if (matchingRoute) {
+          shipmentData.route_id = matchingRoute.id;
+          console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
+        }
+      }
+      
       const { data, error } = await supabase
         .from('shipments')
-        .insert(appToDbShipment(shipment))
+        .insert(shipmentData)
         .select(`
           *,
           transporters:transporter_id (name),
@@ -124,6 +141,7 @@ export const useShipments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
       toast.success(`Shipment from ${formData.source} to ${formData.destination} added successfully`);
       setOpenDialog(false);
       resetForm();
@@ -136,9 +154,24 @@ export const useShipments = () => {
   // Mutation to update a shipment
   const updateShipmentMutation = useMutation({
     mutationFn: async (shipment: Shipment) => {
+      let shipmentData = appToDbShipment(shipment);
+      
+      // If we have source and destination but no route_id, try to find a matching route
+      if (!shipmentData.route_id && shipment.source && shipment.destination) {
+        const matchingRoute = routes.find(route => 
+          route.source.toLowerCase() === shipment.source.toLowerCase() && 
+          route.destination.toLowerCase() === shipment.destination.toLowerCase()
+        );
+        
+        if (matchingRoute) {
+          shipmentData.route_id = matchingRoute.id;
+          console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
+        }
+      }
+      
       const { error } = await supabase
         .from('shipments')
-        .update(appToDbShipment(shipment))
+        .update(shipmentData)
         .eq('id', shipment.id);
       
       if (error) {
@@ -149,6 +182,7 @@ export const useShipments = () => {
     },
     onSuccess: (shipment) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
       toast.success(`Shipment from ${shipment.source} to ${shipment.destination} updated successfully`);
       setOpenDialog(false);
       resetForm();

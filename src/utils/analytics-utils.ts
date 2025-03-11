@@ -73,16 +73,40 @@ export const processFinancialData = (
   let currentMonthShipments = 0;
   let previousMonthShipments = 0;
   
+  // Create a map for quick source-destination lookup
+  const routesBySourceDest: Record<string, any> = {};
+  Object.values(routesMap).forEach(route => {
+    const key = `${route.source}|${route.destination}`.toLowerCase();
+    routesBySourceDest[key] = route;
+  });
+  
+  console.log('Processing shipments for revenue data:', shipments.length);
+  
   shipments.forEach((shipment) => {
-    // Skip if missing route_id
-    if (!shipment.route_id || !routesMap[shipment.route_id]) {
-      console.log(`Shipment ${shipment.id} missing route data`, shipment.route_id);
+    let routeInfo = null;
+    
+    // Try to find route by route_id first
+    if (shipment.route_id && routesMap[shipment.route_id]) {
+      routeInfo = routesMap[shipment.route_id];
+    } 
+    // If route_id is missing or invalid, try to match by source and destination
+    else if (shipment.source && shipment.destination) {
+      const lookupKey = `${shipment.source}|${shipment.destination}`.toLowerCase();
+      routeInfo = routesBySourceDest[lookupKey];
+      
+      if (!routeInfo) {
+        console.log(`No route found for ${shipment.source} to ${shipment.destination}`);
+      }
+    }
+    
+    // Skip if we can't find route information
+    if (!routeInfo) {
+      console.log(`Shipment ${shipment.id} missing route data, trying to find by source/destination`);
       return;
     }
     
     // Use quantities and rates to calculate financials
     const quantity = parseFloat(shipment.quantity_tons) || 0;
-    const routeInfo = routesMap[shipment.route_id];
     const billingRate = parseFloat(routeInfo.billing_rate_per_ton) || 0;
     const vendorRate = parseFloat(routeInfo.vendor_rate_per_ton) || 0;
     
@@ -90,6 +114,8 @@ export const processFinancialData = (
     const revenue = parseFloat((quantity * billingRate).toFixed(2));
     const cost = parseFloat((quantity * vendorRate).toFixed(2));
     const profit = parseFloat((revenue - cost).toFixed(2));
+    
+    console.log(`Calculated for shipment ${shipment.id}: revenue=${revenue}, cost=${cost}, profit=${profit}`);
     
     // Get the month from the shipment's creation date
     const date = new Date(shipment.created_at);
@@ -125,6 +151,8 @@ export const processFinancialData = (
   const revenueData = Object.values(monthlyData).sort((a, b) => 
     monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
   );
+  
+  console.log('Processed revenue data:', revenueData);
   
   return {
     revenueData,
@@ -315,8 +343,10 @@ export const fetchAnalyticsData = async () => {
     let currentMonthShipments = 0;
     let previousMonthShipments = 0;
     
-    // Create some mock data if no proper data exists yet
-    if (!shipments?.length || !Object.keys(routesMap).length) {
+    // Check if we have both routes and shipments
+    const hasValidData = shipments?.length && Object.keys(routesMap).length;
+    
+    if (!hasValidData) {
       console.log('No proper data found, creating sample data for visualization');
       const sampleData = createSampleMonthlyData();
       revenueData = sampleData.revenueData;
@@ -325,11 +355,21 @@ export const fetchAnalyticsData = async () => {
     } else {
       // Process actual shipment data
       const financialData = processFinancialData(shipments, routesMap);
-      revenueData = financialData.revenueData;
-      currentMonthRevenue = financialData.currentMonthRevenue;
-      previousMonthRevenue = financialData.previousMonthRevenue;
-      currentMonthShipments = financialData.currentMonthShipments;
-      previousMonthShipments = financialData.previousMonthShipments;
+      
+      // If we still couldn't generate any revenue data, fall back to sample data
+      if (financialData.revenueData.length === 0) {
+        console.log('Failed to generate revenue data from actual shipments, using sample data');
+        const sampleData = createSampleMonthlyData();
+        revenueData = sampleData.revenueData;
+        currentMonthRevenue = sampleData.currentMonthRevenue;
+        previousMonthRevenue = sampleData.previousMonthRevenue;
+      } else {
+        revenueData = financialData.revenueData;
+        currentMonthRevenue = financialData.currentMonthRevenue;
+        previousMonthRevenue = financialData.previousMonthRevenue;
+        currentMonthShipments = financialData.currentMonthShipments;
+        previousMonthShipments = financialData.previousMonthShipments;
+      }
     }
     
     console.log('Processed revenue data:', revenueData);
