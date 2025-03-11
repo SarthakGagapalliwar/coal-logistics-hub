@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import {
@@ -16,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   User,
   Settings as SettingsIcon,
@@ -26,6 +27,7 @@ import {
   Save,
 } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
+import { Switch } from "@/components/ui/switch";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -55,6 +57,69 @@ const Settings = () => {
     systemAnnouncements: true,
   });
 
+  // Fetch user profile data
+  const { data: profileData } = useQuery({
+    queryKey: ["user-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch user settings data
+  const { data: userSettings } = useQuery({
+    queryKey: ["user-settings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching user settings:", error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Update profile and settings data when fetched
+  useEffect(() => {
+    if (profileData) {
+      setProfileForm({
+        ...profileForm,
+        username: profileData.username || user?.username || "",
+        fullName: profileData.full_name || "",
+        phoneNumber: profileData.phone_number || "",
+      });
+    }
+  }, [profileData, user]);
+
+  useEffect(() => {
+    if (userSettings) {
+      setNotificationSettings({
+        emailNotifications: userSettings.email_notifications,
+        smsNotifications: userSettings.sms_notifications,
+        shipmentUpdates: userSettings.shipment_updates,
+        systemAnnouncements: userSettings.system_announcements,
+      });
+    }
+  }, [userSettings]);
+
   // Handle profile form input changes
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -68,14 +133,15 @@ const Settings = () => {
   };
 
   // Handle notification toggle changes
-  const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
+  const handleNotificationChange = (name: string, checked: boolean) => {
     setNotificationSettings((prev) => ({ ...prev, [name]: checked }));
   };
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: typeof profileForm) => {
+      if (!user?.id) throw new Error("User not authenticated");
+      
       // Update profile in the profiles table
       const { error } = await supabase
         .from("profiles")
@@ -85,7 +151,7 @@ const Settings = () => {
           phone_number: data.phoneNumber,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", user?.id);
+        .eq("id", user.id);
 
       if (error) throw new Error(error.message);
 
@@ -106,6 +172,10 @@ const Settings = () => {
       // First validate that passwords match
       if (data.newPassword !== data.confirmPassword) {
         throw new Error("New passwords do not match");
+      }
+      
+      if (data.newPassword.length < 6) {
+        throw new Error("Password must be at least 6 characters");
       }
 
       // Update password through Supabase Auth
@@ -133,21 +203,26 @@ const Settings = () => {
   // Update notification settings mutation
   const updateNotificationsMutation = useMutation({
     mutationFn: async (data: typeof notificationSettings) => {
+      if (!user?.id) throw new Error("User not authenticated");
+      
       // Update notification settings in the user_settings table
-      const { error } = await supabase.from("user_settings").upsert({
-        user_id: user?.id,
-        email_notifications: data.emailNotifications,
-        sms_notifications: data.smsNotifications,
-        shipment_updates: data.shipmentUpdates,
-        system_announcements: data.systemAnnouncements,
-        updated_at: new Date().toISOString(),
-      });
+      const { error } = await supabase
+        .from("user_settings")
+        .upsert({
+          user_id: user.id,
+          email_notifications: data.emailNotifications,
+          sms_notifications: data.smsNotifications,
+          shipment_updates: data.shipmentUpdates,
+          system_announcements: data.systemAnnouncements,
+          updated_at: new Date().toISOString(),
+        });
 
       if (error) throw new Error(error.message);
 
       return data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-settings"] });
       toast.success("Notification settings updated");
     },
     onError: (error: Error) => {
@@ -229,7 +304,7 @@ const Settings = () => {
                             {user?.username?.charAt(0).toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" type="button">
                           Change Avatar
                         </Button>
                       </div>
@@ -451,13 +526,12 @@ const Settings = () => {
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
+                            <Switch
                               id="emailNotifications"
-                              name="emailNotifications"
-                              className="h-4 w-4 rounded border-gray-300 text-primary"
                               checked={notificationSettings.emailNotifications}
-                              onChange={handleNotificationChange}
+                              onCheckedChange={(checked) => 
+                                handleNotificationChange("emailNotifications", checked)
+                              }
                             />
                           </div>
                         </div>
@@ -475,13 +549,12 @@ const Settings = () => {
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
+                            <Switch
                               id="smsNotifications"
-                              name="smsNotifications"
-                              className="h-4 w-4 rounded border-gray-300 text-primary"
                               checked={notificationSettings.smsNotifications}
-                              onChange={handleNotificationChange}
+                              onCheckedChange={(checked) => 
+                                handleNotificationChange("smsNotifications", checked)
+                              }
                             />
                           </div>
                         </div>
@@ -504,13 +577,12 @@ const Settings = () => {
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
+                            <Switch
                               id="shipmentUpdates"
-                              name="shipmentUpdates"
-                              className="h-4 w-4 rounded border-gray-300 text-primary"
                               checked={notificationSettings.shipmentUpdates}
-                              onChange={handleNotificationChange}
+                              onCheckedChange={(checked) => 
+                                handleNotificationChange("shipmentUpdates", checked)
+                              }
                             />
                           </div>
                         </div>
@@ -529,13 +601,12 @@ const Settings = () => {
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
+                            <Switch
                               id="systemAnnouncements"
-                              name="systemAnnouncements"
-                              className="h-4 w-4 rounded border-gray-300 text-primary"
                               checked={notificationSettings.systemAnnouncements}
-                              onChange={handleNotificationChange}
+                              onCheckedChange={(checked) => 
+                                handleNotificationChange("systemAnnouncements", checked)
+                              }
                             />
                           </div>
                         </div>
