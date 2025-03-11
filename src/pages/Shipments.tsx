@@ -58,7 +58,6 @@ const Shipments = () => {
   
   const isMobile = useIsMobile();
   
-  // Helper function to format dates
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not arrived';
     try {
@@ -68,7 +67,6 @@ const Shipments = () => {
     }
   };
 
-  // Columns for the data table
   const columns = [
     {
       header: 'ID',
@@ -145,7 +143,6 @@ const Shipments = () => {
     },
   ];
 
-  // For mobile, show fewer columns
   const mobileColumns = isMobile
     ? columns.filter(col => 
         ['Source', 'Destination', 'Status', 'Actions'].includes(col.header)
@@ -207,11 +204,10 @@ const Shipments = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Route Selection */}
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="routeId">Route (Optional)</Label>
                     <Select
-                      value=""
+                      value={formData.routeId}
                       onValueChange={(value) => handleSelectChange('routeId', value)}
                     >
                       <SelectTrigger>
@@ -230,7 +226,6 @@ const Shipments = () => {
                     </p>
                   </div>
 
-                  {/* Source */}
                   <div className="space-y-2">
                     <Label htmlFor="source">Source</Label>
                     <div className="relative">
@@ -247,7 +242,6 @@ const Shipments = () => {
                     </div>
                   </div>
 
-                  {/* Destination */}
                   <div className="space-y-2">
                     <Label htmlFor="destination">Destination</Label>
                     <div className="relative">
@@ -264,7 +258,6 @@ const Shipments = () => {
                     </div>
                   </div>
 
-                  {/* Transporter */}
                   <div className="space-y-2">
                     <Label htmlFor="transporterId">Transporter</Label>
                     <Select
@@ -285,7 +278,6 @@ const Shipments = () => {
                     </Select>
                   </div>
 
-                  {/* Vehicle */}
                   <div className="space-y-2">
                     <Label htmlFor="vehicleId">Vehicle</Label>
                     <Select
@@ -309,7 +301,6 @@ const Shipments = () => {
                     </Select>
                   </div>
 
-                  {/* Quantity */}
                   <div className="space-y-2">
                     <Label htmlFor="quantityTons">Quantity (tons)</Label>
                     <div className="relative">
@@ -328,7 +319,6 @@ const Shipments = () => {
                     </div>
                   </div>
 
-                  {/* Status */}
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
                     <Select
@@ -348,7 +338,6 @@ const Shipments = () => {
                     </Select>
                   </div>
 
-                  {/* Departure Time */}
                   <div className="space-y-2">
                     <Label htmlFor="departureTime">Departure Time</Label>
                     <div className="relative">
@@ -368,7 +357,6 @@ const Shipments = () => {
                     </div>
                   </div>
 
-                  {/* Arrival Time */}
                   <div className="space-y-2">
                     <Label htmlFor="arrivalTime">Arrival Time (Optional)</Label>
                     <div className="relative">
@@ -388,7 +376,6 @@ const Shipments = () => {
                   </div>
                 </div>
 
-                {/* Remarks */}
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks (Optional)</Label>
                   <Textarea

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -21,6 +20,7 @@ export interface Shipment {
   departureTime: string;
   arrivalTime: string | null;
   remarks?: string;
+  routeId?: string; // Added routeId property
 }
 
 // Convert DB format to app format
@@ -35,6 +35,7 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   departureTime: dbShipment.departure_time,
   arrivalTime: dbShipment.arrival_time,
   remarks: dbShipment.remarks,
+  routeId: dbShipment.route_id, // Map route_id from DB
 });
 
 // Convert app format to DB format
@@ -48,6 +49,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   departure_time: shipment.departureTime,
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
+  route_id: shipment.routeId, // Include route_id in DB format
 });
 
 export const useShipments = () => {
@@ -69,6 +71,7 @@ export const useShipments = () => {
     departureTime: '',
     arrivalTime: '',
     remarks: '',
+    routeId: '', // Added routeId to formData
   });
 
   // Query to fetch shipments
@@ -258,6 +261,7 @@ export const useShipments = () => {
       departureTime: shipment.departureTime,
       arrivalTime: shipment.arrivalTime || '',
       remarks: shipment.remarks || '',
+      routeId: shipment.routeId || '', // Include routeId
     });
     setOpenDialog(true);
   };
@@ -281,6 +285,7 @@ export const useShipments = () => {
       departureTime: new Date().toISOString(),
       arrivalTime: '',
       remarks: '',
+      routeId: '', // Include routeId
     });
   };
 
@@ -298,6 +303,7 @@ export const useShipments = () => {
       departureTime: formData.departureTime,
       arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
+      routeId: formData.routeId || undefined, // Include routeId
     };
     
     if (selectedShipment) {

@@ -237,4 +237,5 @@ export type DbShipment = {
   arrival_time: string | null;
   remarks?: string;
   created_at: string;
+  route_id?: string; // Added route_id property
 };
