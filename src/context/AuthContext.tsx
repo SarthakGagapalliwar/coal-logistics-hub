@@ -133,11 +133,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // 1. Register user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password: password.trim(),
+        email,
+        password,
         options: {
           data: {
-            username: username.trim()
+            username
           }
         }
       });
@@ -156,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .insert([
             { 
               id: data.user.id,
-              username: username.trim(), 
+              username, 
               role: 'user',
               created_at: new Date().toISOString(),
             }

@@ -29,7 +29,7 @@ const SignUp = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value.trim()
+      [e.target.name]: e.target.value
     });
   };
 
@@ -43,32 +43,30 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      const trimmedEmail = formData.email.trim().toLowerCase();
-      const trimmedUsername = formData.username.trim();
-      const trimmedPassword = formData.password.trim();
-
+      const email = formData.email.trim();
+      
       // Validate email format
-      if (!validateEmail(trimmedEmail)) {
+      if (!validateEmail(email)) {
         toast.error('Please enter a valid email address');
         setIsLoading(false);
         return;
       }
 
       // Validate password
-      if (trimmedPassword.length < 6) {
+      if (formData.password.length < 6) {
         toast.error('Password must be at least 6 characters');
         setIsLoading(false);
         return;
       }
 
       // Validate username
-      if (trimmedUsername.length < 3) {
+      if (formData.username.trim().length < 3) {
         toast.error('Username must be at least 3 characters');
         setIsLoading(false);
         return;
       }
 
-      const success = await signup(trimmedEmail, trimmedPassword, trimmedUsername);
+      const success = await signup(email, formData.password, formData.username);
       if (success) {
         toast.success('Account created successfully! Please check your email for verification.');
         navigate('/signin');
