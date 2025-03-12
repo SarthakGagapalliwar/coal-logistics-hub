@@ -32,18 +32,40 @@ const SignIn = () => {
     });
   };
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const success = await login(formData.email, formData.password);
+      // Validate email format
+      if (!validateEmail(formData.email)) {
+        toast.error('Please enter a valid email address');
+        setIsLoading(false);
+        return;
+      }
+
+      const success = await login(formData.email.toLowerCase(), formData.password);
       if (success) {
         navigate('/dashboard');
+      } else {
+        toast.error('Invalid email or password. Please try again.');
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Invalid email or password. Please try again.');
+      let errorMessage = 'Failed to sign in. Please try again.';
+      
+      if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please verify your email before signing in.';
+      } else if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

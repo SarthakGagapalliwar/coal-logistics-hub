@@ -33,24 +33,46 @@ const SignUp = () => {
     });
   };
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Validate form data
+      // Validate email format
+      if (!validateEmail(formData.email)) {
+        toast.error('Please enter a valid email address');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate password
       if (formData.password.length < 6) {
         toast.error('Password must be at least 6 characters');
         setIsLoading(false);
         return;
       }
 
-      await signup(formData.email, formData.password, formData.username);
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      // Validate username
+      if (formData.username.trim().length < 3) {
+        toast.error('Username must be at least 3 characters');
+        setIsLoading(false);
+        return;
+      }
+
+      const success = await signup(formData.email.toLowerCase(), formData.password, formData.username);
+      if (success) {
+        toast.success('Account created successfully! Please check your email for verification.');
+        navigate('/signin');
+      }
     } catch (error: any) {
       console.error('Signup error:', error);
-      toast.error(error.message || 'Failed to create account. Please try again.');
+      const errorMessage = error.message || 'Failed to create account. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +113,7 @@ const SignUp = () => {
                     required
                     value={formData.username}
                     onChange={handleChange}
+                    minLength={3}
                   />
                 </div>
                 <div className="space-y-2">
