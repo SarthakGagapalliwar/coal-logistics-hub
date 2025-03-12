@@ -43,7 +43,7 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      const email = formData.email.trim();
+      const email = formData.email;
       
       // Validate email format
       if (!validateEmail(email)) {
