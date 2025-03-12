@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -134,11 +133,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // 1. Register user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+        options: {
+          data: {
+            username: username.trim()
+          }
+        }
       });
       
       if (error) {
+        console.error('Signup error:', error);
         toast.error(error.message);
         setLoading(false);
         return false;
@@ -151,20 +156,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .insert([
             { 
               id: data.user.id,
-              username, 
+              username: username.trim(), 
               role: 'user',
               created_at: new Date().toISOString(),
             }
           ]);
           
         if (profileError) {
+          console.error('Profile creation error:', profileError);
           toast.error('Failed to create user profile');
           setLoading(false);
           return false;
         }
         
         toast.success('Account created successfully! Please verify your email.');
-        navigate('/');
         setLoading(false);
         return true;
       }

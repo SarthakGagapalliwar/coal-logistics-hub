@@ -29,12 +29,12 @@ const SignUp = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value.trim()
     });
   };
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(email);
   };
 
@@ -43,28 +43,32 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
+      const trimmedEmail = formData.email.trim().toLowerCase();
+      const trimmedUsername = formData.username.trim();
+      const trimmedPassword = formData.password.trim();
+
       // Validate email format
-      if (!validateEmail(formData.email)) {
+      if (!validateEmail(trimmedEmail)) {
         toast.error('Please enter a valid email address');
         setIsLoading(false);
         return;
       }
 
       // Validate password
-      if (formData.password.length < 6) {
+      if (trimmedPassword.length < 6) {
         toast.error('Password must be at least 6 characters');
         setIsLoading(false);
         return;
       }
 
       // Validate username
-      if (formData.username.trim().length < 3) {
+      if (trimmedUsername.length < 3) {
         toast.error('Username must be at least 3 characters');
         setIsLoading(false);
         return;
       }
 
-      const success = await signup(formData.email.toLowerCase(), formData.password, formData.username);
+      const success = await signup(trimmedEmail, trimmedPassword, trimmedUsername);
       if (success) {
         toast.success('Account created successfully! Please check your email for verification.');
         navigate('/signin');
