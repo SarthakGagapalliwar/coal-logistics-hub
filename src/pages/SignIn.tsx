@@ -9,13 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-const SignUp = () => {
+const SignIn = () => {
   const navigate = useNavigate();
-  const { signup, user, loading: authLoading } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    username: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,19 +37,13 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      // Validate form data
-      if (formData.password.length < 6) {
-        toast.error('Password must be at least 6 characters');
-        setIsLoading(false);
-        return;
+      const success = await login(formData.email, formData.password);
+      if (success) {
+        navigate('/dashboard');
       }
-
-      await signup(formData.email, formData.password, formData.username);
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
     } catch (error: any) {
-      console.error('Signup error:', error);
-      toast.error(error.message || 'Failed to create account. Please try again.');
+      console.error('Login error:', error);
+      toast.error(error.message || 'Invalid email or password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -75,24 +68,13 @@ const SignUp = () => {
         >
           <Card>
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+              <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
               <CardDescription>
-                Enter your information to create an account
+                Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    placeholder="johndoe"
-                    required
-                    value={formData.username}
-                    onChange={handleChange}
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -114,26 +96,25 @@ const SignUp = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    minLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
                       <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-current"></span>
-                      Creating account...
+                      Signing in...
                     </>
                   ) : (
-                    'Create Account'
+                    'Sign In'
                   )}
                 </Button>
               </form>
             </CardContent>
             <CardFooter className="flex justify-center">
               <div className="text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/signin" className="text-primary hover:underline">
-                  Sign In
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-primary hover:underline">
+                  Sign Up
                 </Link>
               </div>
             </CardFooter>
@@ -144,4 +125,4 @@ const SignUp = () => {
   );
 };
 
-export default SignUp;
+export default SignIn;

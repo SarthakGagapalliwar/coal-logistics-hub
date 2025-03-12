@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,10 +27,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      toast.success('Logged out successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const menuItems = [
@@ -43,6 +54,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Check if we're on the home page
+  const isHomePage = location.pathname === '/';
+
+  // If it's the home page and user is not logged in, don't show the dashboard layout
+  if (isHomePage && !user) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -76,9 +95,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             onClick={handleLogout}
             variant="ghost"
             className="flex w-full items-center gap-3 text-gray-700 hover:bg-red-50 hover:text-red-600"
+            disabled={isLoggingOut}
           >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
+            {isLoggingOut ? (
+              <>
+                <span className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full mr-2"></span>
+                <span>Logging out...</span>
+              </>
+            ) : (
+              <>
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </>
+            )}
           </Button>
         </div>
       </aside>
@@ -137,9 +166,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     }}
                     variant="ghost"
                     className="flex w-full items-center gap-3 text-gray-700 hover:bg-red-50 hover:text-red-600"
+                    disabled={isLoggingOut}
                   >
-                    <LogOut className="w-5 h-5" />
-                    <span>Logout</span>
+                    {isLoggingOut ? (
+                      <>
+                        <span className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full mr-2"></span>
+                        <span>Logging out...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LogOut className="w-5 h-5" />
+                        <span>Logout</span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
