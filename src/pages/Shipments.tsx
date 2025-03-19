@@ -1,11 +1,11 @@
-import React from 'react';
-import { Helmet } from 'react-helmet';
-import PageTransition from '@/components/ui-custom/PageTransition';
-import DataTable from '@/components/ui-custom/DataTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useEffect } from "react";
+import { Helmet } from "react-helmet";
+import PageTransition from "@/components/ui-custom/PageTransition";
+import DataTable from "@/components/ui-custom/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -13,26 +13,35 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Plus, Edit, Trash, MapPin, Truck, Weight, Calendar } from 'lucide-react';
+} from "@/components/ui/card";
+import {
+  Plus,
+  Edit,
+  Trash,
+  MapPin,
+  Truck,
+  Weight,
+  Calendar,
+} from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useShipments } from '@/hooks/use-shipments';
-import { format } from 'date-fns';
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useShipments } from "@/hooks/use-shipments";
+import { format } from "date-fns";
+import { useAuth } from "@/context/AuthContext";
 
 const Shipments = () => {
   const {
@@ -55,82 +64,92 @@ const Shipments = () => {
     vehicles,
     routes,
   } = useShipments();
-  
+
   const isMobile = useIsMobile();
-  
+
+  const { user } = useAuth();
+
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Not arrived';
+    if (!dateString) return "Not arrived";
     try {
-      return format(new Date(dateString), 'MMM d, yyyy HH:mm');
+      return format(new Date(dateString), "MMM d, yyyy HH:mm");
     } catch (error) {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
 
   const columns = [
     {
-      header: 'ID',
-      accessorKey: 'id',
+      header: "ID",
+      accessorKey: "id",
     },
     {
-      header: 'Source',
-      accessorKey: 'source',
+      header: "Source",
+      accessorKey: "source",
     },
     {
-      header: 'Destination',
-      accessorKey: 'destination',
+      header: "Destination",
+      accessorKey: "destination",
     },
     {
-      header: 'Transporter',
-      accessorKey: 'transporterName',
+      header: "Transporter",
+      accessorKey: "transporterName",
     },
     {
-      header: 'Vehicle',
-      accessorKey: 'vehicleNumber',
+      header: "Vehicle",
+      accessorKey: "vehicleNumber",
     },
     {
-      header: 'Quantity',
-      accessorKey: 'quantityTons',
+      header: "Quantity",
+      accessorKey: "quantityTons",
       cell: (row: any) => `${row.quantityTons} tons`,
     },
     {
-      header: 'Status',
-      accessorKey: 'status',
+      header: "Status",
+      accessorKey: "status",
       cell: (row: any) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          row.status === 'Completed' ? 'bg-green-100 text-green-800' :
-          row.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-          row.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
-          'bg-red-100 text-red-800'
-        }`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.status === "Completed"
+              ? "bg-green-100 text-green-800"
+              : row.status === "In Transit"
+              ? "bg-blue-100 text-blue-800"
+              : row.status === "Pending"
+              ? "bg-amber-100 text-amber-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
           {row.status}
         </span>
       ),
     },
     {
-      header: 'Departure',
-      accessorKey: 'departureTime',
+      header: "Departure",
+      accessorKey: "departureTime",
       cell: (row: any) => formatDate(row.departureTime),
     },
     {
-      header: 'Arrival',
-      accessorKey: 'arrivalTime',
+      header: "Arrival",
+      accessorKey: "arrivalTime",
       cell: (row: any) => formatDate(row.arrivalTime),
     },
-    {
-      header: 'Actions',
-      accessorKey: 'actions',
+  ];
+
+  if (user?.role === "admin") {
+    columns.push({
+      header: "Actions",
+      accessorKey: "actions",
       cell: (row: any) => (
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => handleEditShipment(row)}
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={() => handleDeleteShipment(row.id)}
@@ -140,12 +159,12 @@ const Shipments = () => {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   const mobileColumns = isMobile
-    ? columns.filter(col => 
-        ['Source', 'Destination', 'Status', 'Actions'].includes(col.header)
+    ? columns.filter((col) =>
+        ["Source", "Destination", "Status", "Actions"].includes(col.header)
       )
     : columns;
 
@@ -163,9 +182,13 @@ const Shipments = () => {
                 Manage and track all coal shipments
               </p>
             </div>
-            <Button onClick={handleAddShipment}>
-              <Plus className="mr-2 h-4 w-4" /> Add Shipment
-            </Button>
+            {user?.role === "admin" ? (
+              <Button onClick={handleAddShipment}>
+                <Plus className="mr-2 h-4 w-4" /> Add Shipment
+              </Button>
+            ) : (
+              <div></div>
+            )}
           </div>
 
           <Card>
@@ -195,7 +218,7 @@ const Shipments = () => {
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedShipment ? 'Edit Shipment' : 'Add New Shipment'}
+                  {selectedShipment ? "Edit Shipment" : "Add New Shipment"}
                 </DialogTitle>
                 <DialogDescription>
                   Fill in the details for the shipment
@@ -208,7 +231,9 @@ const Shipments = () => {
                     <Label htmlFor="routeId">Route (Optional)</Label>
                     <Select
                       value={formData.routeId}
-                      onValueChange={(value) => handleSelectChange('routeId', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("routeId", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a predefined route" />
@@ -262,7 +287,9 @@ const Shipments = () => {
                     <Label htmlFor="transporterId">Transporter</Label>
                     <Select
                       value={formData.transporterId}
-                      onValueChange={(value) => handleSelectChange('transporterId', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("transporterId", value)
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -270,7 +297,10 @@ const Shipments = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {transporters.map((transporter) => (
-                          <SelectItem key={transporter.id} value={transporter.id}>
+                          <SelectItem
+                            key={transporter.id}
+                            value={transporter.id}
+                          >
                             {transporter.name}
                           </SelectItem>
                         ))}
@@ -282,7 +312,9 @@ const Shipments = () => {
                     <Label htmlFor="vehicleId">Vehicle</Label>
                     <Select
                       value={formData.vehicleId}
-                      onValueChange={(value) => handleSelectChange('vehicleId', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("vehicleId", value)
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -290,13 +322,16 @@ const Shipments = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {vehicles
-                          .filter(v => !formData.transporterId || v.transporterId === formData.transporterId)
+                          .filter(
+                            (v) =>
+                              !formData.transporterId ||
+                              v.transporterId === formData.transporterId
+                          )
                           .map((vehicle) => (
                             <SelectItem key={vehicle.id} value={vehicle.id}>
                               {vehicle.vehicleNumber} ({vehicle.vehicleType})
                             </SelectItem>
-                          ))
-                        }
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -323,7 +358,9 @@ const Shipments = () => {
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value) => handleSelectChange('status', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("status", value)
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -347,10 +384,21 @@ const Shipments = () => {
                         name="departureTime"
                         type="datetime-local"
                         className="pl-10"
-                        value={formData.departureTime ? new Date(formData.departureTime).toISOString().slice(0, 16) : ''}
+                        value={
+                          formData.departureTime
+                            ? new Date(formData.departureTime)
+                                .toISOString()
+                                .slice(0, 16)
+                            : ""
+                        }
                         onChange={(e) => {
-                          const date = e.target.value ? new Date(e.target.value).toISOString() : '';
-                          setFormData(prev => ({ ...prev, departureTime: date }));
+                          const date = e.target.value
+                            ? new Date(e.target.value).toISOString()
+                            : "";
+                          setFormData((prev) => ({
+                            ...prev,
+                            departureTime: date,
+                          }));
                         }}
                         required
                       />
@@ -366,10 +414,21 @@ const Shipments = () => {
                         name="arrivalTime"
                         type="datetime-local"
                         className="pl-10"
-                        value={formData.arrivalTime ? new Date(formData.arrivalTime).toISOString().slice(0, 16) : ''}
+                        value={
+                          formData.arrivalTime
+                            ? new Date(formData.arrivalTime)
+                                .toISOString()
+                                .slice(0, 16)
+                            : ""
+                        }
                         onChange={(e) => {
-                          const date = e.target.value ? new Date(e.target.value).toISOString() : '';
-                          setFormData(prev => ({ ...prev, arrivalTime: date }));
+                          const date = e.target.value
+                            ? new Date(e.target.value).toISOString()
+                            : "";
+                          setFormData((prev) => ({
+                            ...prev,
+                            arrivalTime: date,
+                          }));
                         }}
                       />
                     </div>
@@ -383,23 +442,32 @@ const Shipments = () => {
                     name="remarks"
                     placeholder="Enter any additional notes or remarks"
                     value={formData.remarks}
-                    onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        remarks: e.target.value,
+                      }))
+                    }
                     rows={3}
                   />
                 </div>
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpenDialog(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
-                        {selectedShipment ? 'Updating...' : 'Adding...'}
+                        {selectedShipment ? "Updating..." : "Adding..."}
                       </>
                     ) : (
-                      <>{selectedShipment ? 'Update' : 'Add'} Shipment</>
+                      <>{selectedShipment ? "Update" : "Add"} Shipment</>
                     )}
                   </Button>
                 </DialogFooter>

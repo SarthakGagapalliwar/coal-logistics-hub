@@ -1,11 +1,11 @@
-import React from 'react';
-import { Helmet } from 'react-helmet';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
-import PageTransition from '@/components/ui-custom/PageTransition';
-import DataTable from '@/components/ui-custom/DataTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React from "react";
+import { Helmet } from "react-helmet";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
+import PageTransition from "@/components/ui-custom/PageTransition";
+import DataTable from "@/components/ui-custom/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -13,17 +13,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Plus, Edit, Trash, User, Phone, MapPin, Building, FileText } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useTransporters } from '@/hooks/use-transporters';
+} from "@/components/ui/card";
+import {
+  Plus,
+  Edit,
+  Trash,
+  User,
+  Phone,
+  MapPin,
+  Building,
+  FileText,
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useTransporters } from "@/hooks/use-transporters";
+import { useAuth } from "@/context/AuthContext";
 
 const Transporters = () => {
   const {
@@ -39,47 +49,52 @@ const Transporters = () => {
     handleSubmit,
     handleDeleteTransporter,
     isSubmitting,
-    isDeleting
+    isDeleting,
   } = useTransporters();
-  
+
   const isMobile = useIsMobile();
+
+  const { user } = useAuth();
 
   // Columns for the data table
   const columns = [
     {
-      header: 'ID',
-      accessorKey: 'id',
+      header: "ID",
+      accessorKey: "id",
     },
     {
-      header: 'Name',
-      accessorKey: 'name',
+      header: "Name",
+      accessorKey: "name",
     },
     {
-      header: 'GST Number',
-      accessorKey: 'gstn',
+      header: "GST Number",
+      accessorKey: "gstn",
     },
     {
-      header: 'Contact Person',
-      accessorKey: 'contactPerson',
+      header: "Contact Person",
+      accessorKey: "contactPerson",
     },
     {
-      header: 'Phone',
-      accessorKey: 'contactNumber',
+      header: "Phone",
+      accessorKey: "contactNumber",
     },
-    {
-      header: 'Actions',
-      accessorKey: 'actions',
+  ];
+
+  if (user?.role === "admin") {
+    columns.push({
+      header: "Actions",
+      accessorKey: "actions",
       cell: (row: any) => (
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => handleEditTransporter(row)}
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={() => handleDeleteTransporter(row.id)}
@@ -89,16 +104,14 @@ const Transporters = () => {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   // For mobile, show fewer columns
   const mobileColumns = isMobile
-    ? columns.filter(col => 
-        ['ID', 'Name', 'Actions'].includes(col.header)
-      )
+    ? columns.filter((col) => ["ID", "Name", "Actions"].includes(col.header))
     : columns;
-  
+
   return (
     <DashboardLayout>
       <PageTransition>
@@ -108,14 +121,20 @@ const Transporters = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Transporters</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Transporters
+              </h1>
               <p className="text-muted-foreground">
                 Manage transport companies and their details
               </p>
             </div>
-            <Button onClick={handleAddTransporter}>
-              <Plus className="mr-2 h-4 w-4" /> Add Transporter
-            </Button>
+            {user?.role === "admin" ? (
+              <Button onClick={handleAddTransporter}>
+                <Plus className="mr-2 h-4 w-4" /> Add Transporter
+              </Button>
+            ) : (
+              <div></div>
+            )}
           </div>
 
           <Card>
@@ -145,7 +164,9 @@ const Transporters = () => {
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedTransporter ? 'Edit Transporter' : 'Add New Transporter'}
+                  {selectedTransporter
+                    ? "Edit Transporter"
+                    : "Add New Transporter"}
                 </DialogTitle>
                 <DialogDescription>
                   Fill in the details for the transport company
@@ -236,17 +257,21 @@ const Transporters = () => {
                 </div>
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpenDialog(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
-                        {selectedTransporter ? 'Updating...' : 'Adding...'}
+                        {selectedTransporter ? "Updating..." : "Adding..."}
                       </>
                     ) : (
-                      <>{selectedTransporter ? 'Update' : 'Add'} Transporter</>
+                      <>{selectedTransporter ? "Update" : "Add"} Transporter</>
                     )}
                   </Button>
                 </DialogFooter>

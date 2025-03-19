@@ -1,12 +1,11 @@
-
-import React from 'react';
-import { Helmet } from 'react-helmet';
-import PageTransition from '@/components/ui-custom/PageTransition';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
-import DataTable from '@/components/ui-custom/DataTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React from "react";
+import { Helmet } from "react-helmet";
+import PageTransition from "@/components/ui-custom/PageTransition";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
+import DataTable from "@/components/ui-custom/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,17 +13,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Plus, Edit, Trash, MapPin, FileText, DollarSign } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useRoutes } from '@/hooks/use-routes';
+} from "@/components/ui/card";
+import { Plus, Edit, Trash, MapPin, FileText, DollarSign } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useRoutes } from "@/hooks/use-routes";
+import { useAuth } from "@/context/AuthContext";
 
 const RoutesPage = () => {
   const {
@@ -40,51 +40,56 @@ const RoutesPage = () => {
     handleSubmit,
     handleDeleteRoute,
     isSubmitting,
-    isDeleting
+    isDeleting,
   } = useRoutes();
-  
+
   const isMobile = useIsMobile();
+
+  const { user } = useAuth();
 
   // Columns for the data table
   const columns = [
     {
-      header: 'ID',
-      accessorKey: 'id',
+      header: "ID",
+      accessorKey: "id",
     },
     {
-      header: 'Origin',
-      accessorKey: 'source',
+      header: "Origin",
+      accessorKey: "source",
     },
     {
-      header: 'Destination',
-      accessorKey: 'destination',
+      header: "Destination",
+      accessorKey: "destination",
     },
     {
-      header: 'Distance (km)',
-      accessorKey: 'distanceKm',
+      header: "Distance (km)",
+      accessorKey: "distanceKm",
     },
     {
-      header: 'Billing Rate (₹/ton)',
-      accessorKey: 'billingRatePerTon',
+      header: "Billing Rate (₹/ton)",
+      accessorKey: "billingRatePerTon",
     },
     {
-      header: 'Vendor Rate (₹/ton)',
-      accessorKey: 'vendorRatePerTon',
+      header: "Vendor Rate (₹/ton)",
+      accessorKey: "vendorRatePerTon",
     },
-    {
-      header: 'Actions',
-      accessorKey: 'actions',
+  ];
+
+  if (user?.role === "admin") {
+    columns.push({
+      header: "Actions",
+      accessorKey: "actions",
       cell: (row: any) => (
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => handleEditRoute(row)}
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={() => handleDeleteRoute(row.id)}
@@ -94,16 +99,16 @@ const RoutesPage = () => {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   // For mobile, show fewer columns
   const mobileColumns = isMobile
-    ? columns.filter(col => 
-        ['ID', 'Origin', 'Destination', 'Actions'].includes(col.header)
+    ? columns.filter((col) =>
+        ["ID", "Origin", "Destination", "Actions"].includes(col.header)
       )
     : columns;
-  
+
   return (
     <DashboardLayout>
       <PageTransition>
@@ -118,9 +123,13 @@ const RoutesPage = () => {
                 Manage transportation routes and their details
               </p>
             </div>
-            <Button onClick={handleAddRoute}>
-              <Plus className="mr-2 h-4 w-4" /> Add Route
-            </Button>
+            {user?.role === "admin" ? (
+              <Button onClick={handleAddRoute}>
+                <Plus className="mr-2 h-4 w-4" /> Add Route
+              </Button>
+            ) : (
+              <div></div>
+            )}
           </div>
 
           <Card>
@@ -150,7 +159,7 @@ const RoutesPage = () => {
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedRoute ? 'Edit Route' : 'Add New Route'}
+                  {selectedRoute ? "Edit Route" : "Add New Route"}
                 </DialogTitle>
                 <DialogDescription>
                   Fill in the details for the transportation route
@@ -209,7 +218,9 @@ const RoutesPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="billingRatePerTon">Billing Rate (₹/ton)</Label>
+                    <Label htmlFor="billingRatePerTon">
+                      Billing Rate (₹/ton)
+                    </Label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
@@ -226,7 +237,9 @@ const RoutesPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="vendorRatePerTon">Vendor Rate (₹/ton)</Label>
+                    <Label htmlFor="vendorRatePerTon">
+                      Vendor Rate (₹/ton)
+                    </Label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
@@ -244,17 +257,21 @@ const RoutesPage = () => {
                 </div>
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpenDialog(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
-                        {selectedRoute ? 'Updating...' : 'Adding...'}
+                        {selectedRoute ? "Updating..." : "Adding..."}
                       </>
                     ) : (
-                      <>{selectedRoute ? 'Update' : 'Add'} Route</>
+                      <>{selectedRoute ? "Update" : "Add"} Route</>
                     )}
                   </Button>
                 </DialogFooter>

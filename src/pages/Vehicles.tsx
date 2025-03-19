@@ -1,12 +1,11 @@
-
-import React from 'react';
-import { Helmet } from 'react-helmet';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
-import PageTransition from '@/components/ui-custom/PageTransition';
-import DataTable from '@/components/ui-custom/DataTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React from "react";
+import { Helmet } from "react-helmet";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
+import PageTransition from "@/components/ui-custom/PageTransition";
+import DataTable from "@/components/ui-custom/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,25 +13,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Plus, Edit, Trash, Truck, Calendar } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { format } from 'date-fns';
-import { useVehicles } from '@/hooks/use-vehicles';
+} from "@/components/ui/card";
+import { Plus, Edit, Trash, Truck, Calendar } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { format } from "date-fns";
+import { useVehicles } from "@/hooks/use-vehicles";
+import { useAuth } from "@/context/AuthContext";
 
 const Vehicles = () => {
   const {
@@ -52,74 +52,83 @@ const Vehicles = () => {
     isDeleting,
     transporters,
   } = useVehicles();
-  
+
   const isMobile = useIsMobile();
-  
+
+  const { user } = useAuth();
+
   // Helper function to format dates
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     try {
-      return format(new Date(dateString), 'MMM d, yyyy');
+      return format(new Date(dateString), "MMM d, yyyy");
     } catch (error) {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
 
   // Columns for the data table
   const columns = [
     {
-      header: 'ID',
-      accessorKey: 'id',
+      header: "ID",
+      accessorKey: "id",
     },
     {
-      header: 'Vehicle Number',
-      accessorKey: 'vehicleNumber',
+      header: "Vehicle Number",
+      accessorKey: "vehicleNumber",
     },
     {
-      header: 'Transporter',
-      accessorKey: 'transporterName',
+      header: "Transporter",
+      accessorKey: "transporterName",
     },
     {
-      header: 'Type',
-      accessorKey: 'vehicleType',
+      header: "Type",
+      accessorKey: "vehicleType",
     },
     {
-      header: 'Capacity',
-      accessorKey: 'capacity',
+      header: "Capacity",
+      accessorKey: "capacity",
       cell: (row: any) => `${row.capacity} tons`,
     },
     {
-      header: 'Status',
-      accessorKey: 'status',
+      header: "Status",
+      accessorKey: "status",
       cell: (row: any) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          row.status === 'Available' ? 'bg-green-100 text-green-800' :
-          row.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-          'bg-amber-100 text-amber-800'
-        }`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.status === "Available"
+              ? "bg-green-100 text-green-800"
+              : row.status === "In Transit"
+              ? "bg-blue-100 text-blue-800"
+              : "bg-amber-100 text-amber-800"
+          }`}
+        >
           {row.status}
         </span>
       ),
     },
     {
-      header: 'Last Maintenance',
-      accessorKey: 'lastMaintenance',
+      header: "Last Maintenance",
+      accessorKey: "lastMaintenance",
       cell: (row: any) => formatDate(row.lastMaintenance),
     },
-    {
-      header: 'Actions',
-      accessorKey: 'actions',
+  ];
+
+  if (user?.role === "admin") {
+    columns.push({
+      header: "Actions",
+      accessorKey: "actions",
       cell: (row: any) => (
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => handleEditVehicle(row)}
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={() => handleDeleteVehicle(row.id)}
@@ -129,13 +138,13 @@ const Vehicles = () => {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   // For mobile, show fewer columns
   const mobileColumns = isMobile
-    ? columns.filter(col => 
-        ['Vehicle Number', 'Type', 'Status', 'Actions'].includes(col.header)
+    ? columns.filter((col) =>
+        ["Vehicle Number", "Type", "Status", "Actions"].includes(col.header)
       )
     : columns;
 
@@ -153,9 +162,13 @@ const Vehicles = () => {
                 Manage transportation vehicles and their details
               </p>
             </div>
-            <Button onClick={handleAddVehicle}>
-              <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-            </Button>
+            {user?.role === "admin" ? (
+              <Button onClick={handleAddVehicle}>
+                <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+              </Button>
+            ) : (
+              <div></div>
+            )}
           </div>
 
           <Card>
@@ -185,7 +198,7 @@ const Vehicles = () => {
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
+                  {selectedVehicle ? "Edit Vehicle" : "Add New Vehicle"}
                 </DialogTitle>
                 <DialogDescription>
                   Fill in the details for the vehicle
@@ -198,7 +211,9 @@ const Vehicles = () => {
                     <Label htmlFor="transporterId">Transporter</Label>
                     <Select
                       value={formData.transporterId}
-                      onValueChange={(value) => handleSelectChange('transporterId', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("transporterId", value)
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -206,7 +221,10 @@ const Vehicles = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {transporters.map((transporter) => (
-                          <SelectItem key={transporter.id} value={transporter.id}>
+                          <SelectItem
+                            key={transporter.id}
+                            value={transporter.id}
+                          >
                             {transporter.name}
                           </SelectItem>
                         ))}
@@ -234,7 +252,9 @@ const Vehicles = () => {
                     <Label htmlFor="vehicleType">Vehicle Type</Label>
                     <Select
                       value={formData.vehicleType}
-                      onValueChange={(value) => handleSelectChange('vehicleType', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("vehicleType", value)
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -271,7 +291,9 @@ const Vehicles = () => {
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value) => handleSelectChange('status', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("status", value)
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -287,17 +309,21 @@ const Vehicles = () => {
                 </div>
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpenDialog(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <span className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
-                        {selectedVehicle ? 'Updating...' : 'Adding...'}
+                        {selectedVehicle ? "Updating..." : "Adding..."}
                       </>
                     ) : (
-                      <>{selectedVehicle ? 'Update' : 'Add'} Vehicle</>
+                      <>{selectedVehicle ? "Update" : "Add"} Vehicle</>
                     )}
                   </Button>
                 </DialogFooter>
