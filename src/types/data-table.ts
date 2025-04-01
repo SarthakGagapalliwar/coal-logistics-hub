@@ -10,6 +10,8 @@ export interface Column<T> {
 export interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  searchKey?: string;
+  searchKey?: keyof T;
   searchPlaceholder?: string;
+  onRowClick?: (item: T) => void;
+  className?: string;
 }
