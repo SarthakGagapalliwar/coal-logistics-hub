@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -74,13 +75,13 @@ const Navbar: React.FC = () => {
     { to: '/vehicles', icon: <Truck size={20} />, label: 'Vehicles' },
     { to: '/routes', icon: <Route size={20} />, label: 'Routes' },
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
-  ];
-
-  // Only show these items for admin users
-  const adminItems = [
-    { to: '/users', icon: <Users size={20} />, label: 'User Management' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
     { to: '/settings', icon: <Settings size={20} />, label: 'Settings' },
+  ];
+
+  // Admin-only items
+  const adminItems = [
+    { to: '/users', icon: <Users size={20} />, label: 'User Management' },
   ];
 
   const items = user.role === 'admin' 
