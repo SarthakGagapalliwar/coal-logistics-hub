@@ -49,6 +49,7 @@ export const useVehicles = () => {
     transporterId: '',
     vehicleNumber: '',
     vehicleType: 'Truck',
+    customVehicleType: '',
     capacity: '',
     status: 'Available',
   });
@@ -185,6 +186,7 @@ export const useVehicles = () => {
       transporterId: vehicle.transporterId,
       vehicleNumber: vehicle.vehicleNumber,
       vehicleType: vehicle.vehicleType,
+      customVehicleType: '',
       capacity: vehicle.capacity.toString(),
       status: vehicle.status,
     });
@@ -204,6 +206,7 @@ export const useVehicles = () => {
       transporterId: '',
       vehicleNumber: '',
       vehicleType: 'Truck',
+      customVehicleType: '',
       capacity: '',
       status: 'Available',
     });
@@ -213,10 +216,15 @@ export const useVehicles = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // If vehicle type is "Other", use the custom type instead
+    const finalVehicleType = formData.vehicleType === 'Other' 
+      ? formData.customVehicleType 
+      : formData.vehicleType;
+    
     const vehicleData = {
       transporterId: formData.transporterId,
       vehicleNumber: formData.vehicleNumber,
-      vehicleType: formData.vehicleType,
+      vehicleType: finalVehicleType,
       capacity: Number(formData.capacity),
       status: formData.status,
       lastMaintenance: new Date().toISOString(),

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -265,9 +266,24 @@ const Vehicles = () => {
                         <SelectItem value="Trailer">Trailer</SelectItem>
                         <SelectItem value="Dumper">Dumper</SelectItem>
                         <SelectItem value="Train">Train</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {formData.vehicleType === "Other" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="customVehicleType">Custom Vehicle Type</Label>
+                      <Input
+                        id="customVehicleType"
+                        name="customVehicleType"
+                        placeholder="Enter custom vehicle type"
+                        value={formData.customVehicleType || ''}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="capacity">Capacity (tons)</Label>
