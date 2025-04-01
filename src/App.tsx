@@ -16,6 +16,7 @@ import RoutesPage from "./pages/Routes";
 import Shipments from "./pages/Shipments";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/signin" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Admin-only route component
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return <>{children}</>;
@@ -80,6 +100,13 @@ const AppRoutes = () => {
         <ProtectedRoute>
           <Settings />
         </ProtectedRoute>
+      } />
+      
+      {/* Admin-only Routes */}
+      <Route path="/users" element={
+        <AdminRoute>
+          <UserManagement />
+        </AdminRoute>
       } />
       
       {/* Catch-all route */}

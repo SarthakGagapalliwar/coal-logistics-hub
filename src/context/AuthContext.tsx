@@ -23,6 +23,7 @@ interface AuthContextType {
   signup: (email: string, password: string, username: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  createUser: (email: string, password: string, username: string, role: UserRole) => Promise<boolean>;
 }
 
 // Create context
@@ -100,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     
     try {
+      // Don't trim or transform email to avoid validation issues
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -187,6 +189,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Create user function (for admin use)
+  const createUser = async (email: string, password: string, username: string, role: UserRole): Promise<boolean> => {
+    // This is a simplified version - in a real app, you'd need service role or admin API
+    // For demo purposes, we'll use the same signup flow but with a different role
+    setLoading(true);
+    
+    try {
+      // 1. Register user in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('User creation error:', error);
+        throw error;
+      }
+      
+      if (data?.user) {
+        // 2. Create a profile record for the user with specified role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: data.user.id,
+              username, 
+              role,
+              created_at: new Date().toISOString(),
+            }
+          ]);
+          
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error('Failed to create user profile');
+        }
+        
+        setLoading(false);
+        return true;
+      }
+      
+      setLoading(false);
+      return false;
+    } catch (error) {
+      console.error('User creation error:', error);
+      setLoading(false);
+      throw error;
+    }
+  };
+
   // Logout function
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -210,6 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         isAuthenticated: !!user,
+        createUser
       }}
     >
       {children}

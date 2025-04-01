@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -12,7 +11,8 @@ import {
   LogOut, 
   Menu,
   X,
-  User
+  User,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -78,6 +78,7 @@ const Navbar: React.FC = () => {
 
   // Only show these items for admin users
   const adminItems = [
+    { to: '/users', icon: <Users size={20} />, label: 'User Management' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
     { to: '/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
