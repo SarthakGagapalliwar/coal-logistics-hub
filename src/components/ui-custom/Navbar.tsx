@@ -69,6 +69,7 @@ const Navbar: React.FC = () => {
   // Only show navbar when user is authenticated
   if (!user) return null;
 
+  // These items are shown to all users
   const navItems = [
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
@@ -84,6 +85,7 @@ const Navbar: React.FC = () => {
     { to: '/users', icon: <Users size={20} />, label: 'User Management' },
   ];
 
+  // Combine regular items with admin items if the user is an admin
   const items = user.role === 'admin' 
     ? [...navItems, ...adminItems] 
     : navItems;
