@@ -1,17 +1,17 @@
 
-import { ReactElement } from 'react';
+import { ReactNode } from "react";
 
 export interface Column<T> {
   header: string;
   accessorKey: keyof T | string;
-  cell?: (row: T) => string | ReactElement;
+  cell?: (item: T) => ReactNode;
 }
 
 export interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  searchKey?: keyof T;
   searchPlaceholder?: string;
+  searchKey?: keyof T;
   onRowClick?: (item: T) => void;
   className?: string;
 }

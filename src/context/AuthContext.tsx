@@ -191,19 +191,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Create user function (for admin use)
   const createUser = async (email: string, password: string, username: string, role: UserRole): Promise<boolean> => {
-    // This is a simplified version - in a real app, you'd need service role or admin API
-    // For demo purposes, we'll use the same signup flow but with a different role
-    setLoading(true);
-    
     try {
-      // 1. Register user in Supabase Auth
+      console.log("Creating new user with:", { email, username, role });
+      
+      // 1. Register user in Supabase Auth using regular signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             username
-          }
+          },
+          emailRedirectTo: window.location.origin
         }
       });
       
@@ -216,12 +215,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 2. Create a profile record for the user with specified role
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([
+          .upsert([
             { 
               id: data.user.id,
               username, 
-              role,
+              role, // Use the role parameter
               created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           ]);
           
@@ -230,15 +230,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('Failed to create user profile');
         }
         
-        setLoading(false);
         return true;
       }
       
-      setLoading(false);
       return false;
     } catch (error) {
       console.error('User creation error:', error);
-      setLoading(false);
       throw error;
     }
   };

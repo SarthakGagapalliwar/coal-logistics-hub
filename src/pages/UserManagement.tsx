@@ -52,7 +52,7 @@ interface User {
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, createUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
@@ -132,34 +132,21 @@ const UserManagement = () => {
   const handleCreateUser = async () => {
     setIsLoading(true);
     try {
-      // 1. Create the user in Supabase Auth
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: { username: formData.username },
-      });
+      // Use the createUser method from AuthContext instead of direct admin API call
+      const success = await createUser(
+        formData.email,
+        formData.password,
+        formData.username,
+        formData.role
+      );
 
-      if (error) {
-        throw error;
-      }
-
-      if (data?.user) {
-        // 2. Update the role in profiles table
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ role: formData.role })
-          .eq("id", data.user.id);
-
-        if (profileError) {
-          toast.error("User created but failed to set role");
-          console.error("Error updating profile:", profileError);
-        } else {
-          toast.success("User created successfully");
-          setOpen(false);
-          resetForm();
-          fetchUsers();
-        }
+      if (success) {
+        toast.success("User created successfully");
+        setOpen(false);
+        resetForm();
+        fetchUsers();
+      } else {
+        toast.error("Failed to create user");
       }
     } catch (error: any) {
       console.error("Error creating user:", error);
