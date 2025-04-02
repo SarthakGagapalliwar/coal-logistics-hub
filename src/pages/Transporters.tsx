@@ -30,6 +30,7 @@ import {
   MapPin,
   Building,
   FileText,
+  University,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransporters } from "@/hooks/use-transporters";
@@ -107,7 +108,7 @@ const Transporters = () => {
     });
   }
 
-  // For mobile, show fewer columns
+  
   const mobileColumns = isMobile
     ? columns.filter((col) => ["ID", "Name", "Actions"].includes(col.header))
     : columns;

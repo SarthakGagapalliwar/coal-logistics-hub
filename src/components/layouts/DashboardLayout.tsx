@@ -12,11 +12,13 @@ import {
   Settings, 
   LogOut,
   Menu,
+  User,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
+
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -51,8 +53,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { icon: <Package className="w-5 h-5" />, label: 'Shipments', path: '/shipments' },
     { icon: <BarChart3 className="w-5 h-5" />, label: 'Reports', path: '/reports' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', path: '/settings' },
+    ...(user?.role === 'admin' ? [{ icon: <User className="w-5 h-5" />, label: 'UserManagement', path: '/users' }] : []),
   ];
-
+  
   const isActive = (path: string) => location.pathname === path;
 
   // Check if we're on the home page

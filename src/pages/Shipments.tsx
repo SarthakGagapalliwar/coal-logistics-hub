@@ -135,7 +135,7 @@ const Shipments = () => {
     },
   ];
 
-  if (user?.role === "admin") {
+  // if (user?.role === "admin") {
     columns.push({
       header: "Actions",
       accessorKey: "actions",
@@ -160,7 +160,7 @@ const Shipments = () => {
         </div>
       ),
     });
-  }
+  // }
 
   const mobileColumns = isMobile
     ? columns.filter((col) =>
@@ -182,13 +182,13 @@ const Shipments = () => {
                 Manage and track all coal shipments
               </p>
             </div>
-            {user?.role === "admin" ? (
+            {/* {user?.role === "admin" ? ( */}
               <Button onClick={handleAddShipment}>
                 <Plus className="mr-2 h-4 w-4" /> Add Shipment
               </Button>
-            ) : (
+            {/* ) : (
               <div></div>
-            )}
+            )} */}
           </div>
 
           <Card>
@@ -261,7 +261,7 @@ const Shipments = () => {
                         placeholder="Enter source location"
                         className="pl-10"
                         value={formData.source}
-                        onChange={handleInputChange}
+                        // onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -277,7 +277,7 @@ const Shipments = () => {
                         placeholder="Enter destination location"
                         className="pl-10"
                         value={formData.destination}
-                        onChange={handleInputChange}
+                        // onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -336,25 +336,8 @@ const Shipments = () => {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="quantityTons">Quantity (tons)</Label>
-                    <div className="relative">
-                      <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="quantityTons"
-                        name="quantityTons"
-                        type="number"
-                        min="1"
-                        placeholder="Enter quantity in tons"
-                        className="pl-10"
-                        value={formData.quantityTons}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
@@ -373,7 +356,7 @@ const Shipments = () => {
                         <SelectItem value="Cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </div> */}
 
                   <div className="space-y-2">
                     <Label htmlFor="departureTime">Departure Time</Label>
@@ -435,6 +418,25 @@ const Shipments = () => {
                   </div>
                 </div>
 
+                
+                <div className="space-y-2">
+                    <Label htmlFor="quantityTons">Quantity (tons)</Label>
+                    <div className="relative">
+                      <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        id="quantityTons"
+                        name="quantityTons"
+                        type="number"
+                        min="1"
+                        placeholder="Enter quantity in tons"
+                        className="pl-10"
+                        value={formData.quantityTons}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks (Optional)</Label>
                   <Textarea
@@ -481,3 +483,4 @@ const Shipments = () => {
 };
 
 export default Shipments;
+

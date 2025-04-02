@@ -133,12 +133,12 @@ const SignIn = () => {
               </form>
             </CardContent>
             <CardFooter className="flex justify-center">
-              <div className="text-sm text-muted-foreground">
+              {/* <div className="text-sm text-muted-foreground">
                 Don't have an account?{' '}
                 <Link to="/signup" className="text-primary hover:underline">
                   Sign Up
                 </Link>
-              </div>
+              </div> */}
             </CardFooter>
           </Card>
         </motion.div>

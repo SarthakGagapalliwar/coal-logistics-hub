@@ -24,12 +24,14 @@ const Index = () => {
             </Button>
           ) : (
             <div className="flex gap-4">
-              <Button asChild variant="outline">
-                <Link to="/signin">Sign In</Link>
-              </Button>
-              <Button asChild>
+              <Button asChild variant="outline" size="lg" className='bg-black text-white' >
+                  <Link to="/signin">
+                    Sign In <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              {/* <Button asChild>
                 <Link to="/signup">Sign Up</Link>
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>
@@ -70,14 +72,14 @@ const Index = () => {
               </Button>
             ) : (
               <>
-                <Button asChild size="lg">
+                {/* <Button asChild size="lg">
                   <Link to="/signup">
                     Get Started <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
+                </Button> */}
+                <Button asChild variant="outline" size="lg" className='bg-black text-white' >
                   <Link to="/signin">
-                    Sign In
+                    Sign In <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
               </>
@@ -142,7 +144,7 @@ const Index = () => {
               <div>
                 <h3 className="font-semibold mb-2">Platform</h3>
                 <ul className="space-y-1">
-                  <li><Link to="/signup" className="text-gray-400 hover:text-white">Sign Up</Link></li>
+                  {/* <li><Link to="/signup" className="text-gray-400 hover:text-white">Sign Up</Link></li> */}
                   <li><Link to="/signin" className="text-gray-400 hover:text-white">Sign In</Link></li>
                 </ul>
               </div>
