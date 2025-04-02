@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,17 +14,17 @@ import { utils, writeFile } from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { DateRange } from 'react-day-picker';
 
 const Reports = () => {
   const { revenueData, shipmentStatusData, isLoading, error } = useAnalytics();
   const { user } = useAuth();
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
   });
   const [isExporting, setIsExporting] = useState(false);
   
-  // Calculate summary statistics
   const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
   const totalCost = revenueData.reduce((sum, item) => sum + item.cost, 0);
   const totalProfit = totalRevenue - totalCost;
@@ -34,17 +33,16 @@ const Reports = () => {
   const completedShipments = shipmentStatusData.find(s => s.status === 'Completed')?.count || 0;
   const inTransitShipments = shipmentStatusData.find(s => s.status === 'In Transit')?.count || 0;
 
-  // For pie chart
   const statusData = [
     { name: 'Completed', value: completedShipments },
     { name: 'In Transit', value: inTransitShipments },
     { name: 'Pending', value: totalShipments - completedShipments - inTransitShipments },
-  ].filter(item => item.value > 0); // Only include statuses with values
+  ].filter(item => item.value > 0);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9467BD'];
 
   const handleExportExcel = async () => {
-    if (!dateRange.from || !dateRange.to) {
+    if (!dateRange?.from || !dateRange?.to) {
       toast.error('Please select both start and end dates');
       return;
     }
@@ -52,7 +50,6 @@ const Reports = () => {
     setIsExporting(true);
     
     try {
-      // Fetch shipments with details from Supabase
       const { data, error } = await supabase
         .from('shipments')
         .select(`
@@ -66,7 +63,6 @@ const Reports = () => {
         throw new Error(error.message);
       }
       
-      // Filter shipments by date range
       const filteredShipments = data.filter(shipment => {
         const departureDate = parseISO(shipment.departure_time);
         return (
@@ -81,7 +77,6 @@ const Reports = () => {
         return;
       }
       
-      // Format data for Excel
       const formattedData = filteredShipments.map(shipment => ({
         'ID': shipment.id,
         'Transporter': shipment.transporters?.name || 'Unknown',
@@ -95,19 +90,15 @@ const Reports = () => {
         'Remarks': shipment.remarks || '',
       }));
       
-      // Create worksheet
       const worksheet = utils.json_to_sheet(formattedData);
       
-      // Create workbook
       const workbook = utils.book_new();
       utils.book_append_sheet(workbook, worksheet, 'Shipments');
       
-      // Generate filename with date range
       const fromDate = format(dateRange.from, 'yyyy-MM-dd');
       const toDate = format(dateRange.to, 'yyyy-MM-dd');
       const filename = `Shipments_${fromDate}_to_${toDate}.xlsx`;
       
-      // Export to file
       writeFile(workbook, filename);
       
       toast.success('Shipment report downloaded successfully');
@@ -162,11 +153,11 @@ const Reports = () => {
                       variant="outline"
                       className={cn(
                         "w-[300px] justify-start text-left font-normal",
-                        !dateRange.from && "text-muted-foreground"
+                        !dateRange?.from && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange.from ? (
+                      {dateRange?.from ? (
                         dateRange.to ? (
                           <>
                             {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
@@ -183,7 +174,7 @@ const Reports = () => {
                     <Calendar
                       initialFocus
                       mode="range"
-                      defaultMonth={dateRange.from}
+                      defaultMonth={dateRange?.from}
                       selected={dateRange}
                       onSelect={setDateRange}
                       numberOfMonths={2}
@@ -195,7 +186,7 @@ const Reports = () => {
               
               <Button 
                 onClick={handleExportExcel} 
-                disabled={isExporting || !dateRange.from || !dateRange.to}
+                disabled={isExporting || !dateRange?.from || !dateRange?.to}
               >
                 {isExporting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
