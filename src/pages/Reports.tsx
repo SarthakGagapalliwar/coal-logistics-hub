@@ -1,15 +1,30 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Download, CalendarIcon } from 'lucide-react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAnalytics } from '@/hooks/use-analytics';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format, isAfter, isBefore, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { utils, writeFile } from 'xlsx';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const Reports = () => {
   const { revenueData, shipmentStatusData, isLoading, error } = useAnalytics();
-
+  const { user } = useAuth();
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  });
+  const [isExporting, setIsExporting] = useState(false);
+  
   // Calculate summary statistics
   const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
   const totalCost = revenueData.reduce((sum, item) => sum + item.cost, 0);
@@ -27,6 +42,82 @@ const Reports = () => {
   ].filter(item => item.value > 0); // Only include statuses with values
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9467BD'];
+
+  const handleExportExcel = async () => {
+    if (!dateRange.from || !dateRange.to) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+    
+    setIsExporting(true);
+    
+    try {
+      // Fetch shipments with details from Supabase
+      const { data, error } = await supabase
+        .from('shipments')
+        .select(`
+          *,
+          transporters:transporter_id (name),
+          vehicles:vehicle_id (vehicle_number)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Filter shipments by date range
+      const filteredShipments = data.filter(shipment => {
+        const departureDate = parseISO(shipment.departure_time);
+        return (
+          isAfter(departureDate, dateRange.from!) && 
+          isBefore(departureDate, dateRange.to!)
+        );
+      });
+      
+      if (filteredShipments.length === 0) {
+        toast.warning('No shipments found in the selected date range');
+        setIsExporting(false);
+        return;
+      }
+      
+      // Format data for Excel
+      const formattedData = filteredShipments.map(shipment => ({
+        'ID': shipment.id,
+        'Transporter': shipment.transporters?.name || 'Unknown',
+        'Vehicle': shipment.vehicles?.vehicle_number || 'Unknown',
+        'Source': shipment.source,
+        'Destination': shipment.destination,
+        'Quantity (Tons)': shipment.quantity_tons,
+        'Status': shipment.status,
+        'Departure Time': format(parseISO(shipment.departure_time), 'PPP p'),
+        'Arrival Time': shipment.arrival_time ? format(parseISO(shipment.arrival_time), 'PPP p') : 'Not arrived',
+        'Remarks': shipment.remarks || '',
+      }));
+      
+      // Create worksheet
+      const worksheet = utils.json_to_sheet(formattedData);
+      
+      // Create workbook
+      const workbook = utils.book_new();
+      utils.book_append_sheet(workbook, worksheet, 'Shipments');
+      
+      // Generate filename with date range
+      const fromDate = format(dateRange.from, 'yyyy-MM-dd');
+      const toDate = format(dateRange.to, 'yyyy-MM-dd');
+      const filename = `Shipments_${fromDate}_to_${toDate}.xlsx`;
+      
+      // Export to file
+      writeFile(workbook, filename);
+      
+      toast.success('Shipment report downloaded successfully');
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error(`Failed to export shipments: ${(err as Error).message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -58,7 +149,64 @@ const Reports = () => {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6">Reports & Analytics</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Reports & Analytics</h1>
+          
+          {user?.role === 'admin' && (
+            <div className="flex items-center gap-2">
+              <div className="grid gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant="outline"
+                      className={cn(
+                        "w-[300px] justify-start text-left font-normal",
+                        !dateRange.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Select date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange.from}
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                      className="pointer-events-auto p-3"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <Button 
+                onClick={handleExportExcel} 
+                disabled={isExporting || !dateRange.from || !dateRange.to}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Export Excel
+              </Button>
+            </div>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card>

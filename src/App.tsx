@@ -105,10 +105,8 @@ const AppRoutes = () => {
       {/* Admin-only Routes */}
       <Route path="/users" element={
         <AdminRoute>
-        {/* // <ProtectedRoute> */}
           <UserManagement />
-        {/* </ProtectedRoute> */}
-        // </AdminRoute>
+        </AdminRoute>
       } />
       
       {/* Catch-all route */}
