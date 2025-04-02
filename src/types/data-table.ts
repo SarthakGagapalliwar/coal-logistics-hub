@@ -1,17 +1,18 @@
 
+import { ColumnDef } from "@tanstack/react-table";
 import { ReactNode } from "react";
 
-export interface Column<T> {
+// Base interface for the column definition
+export interface Column {
   header: string;
-  accessorKey: keyof T | string;
-  cell?: (item: T) => ReactNode;
+  accessorKey: string;
+  cell?: (props: any) => ReactNode;
 }
 
-export interface DataTableProps<T> {
-  data: T[];
-  columns: Column<T>[];
-  searchPlaceholder?: string;
-  searchKey?: keyof T;
-  onRowClick?: (item: T) => void;
-  className?: string;
+// Column definition for the data table
+export type DataTableColumn<T> = ColumnDef<T>;
+
+// Row selection state for the data table
+export interface RowSelectionState {
+  [key: string]: boolean;
 }

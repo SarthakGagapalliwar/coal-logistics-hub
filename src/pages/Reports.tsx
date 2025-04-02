@@ -55,7 +55,8 @@ const Reports = () => {
         .select(`
           *,
           transporters:transporter_id (name),
-          vehicles:vehicle_id (vehicle_number)
+          vehicles:vehicle_id (vehicle_number),
+          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
         `)
         .order('created_at', { ascending: false });
       
@@ -84,6 +85,8 @@ const Reports = () => {
         'Source': shipment.source,
         'Destination': shipment.destination,
         'Quantity (Tons)': shipment.quantity_tons,
+        'Billing Rate (₹/Ton)': shipment.routes?.billing_rate_per_ton || 'N/A',
+        'Vendor Rate (₹/Ton)': shipment.routes?.vendor_rate_per_ton || 'N/A',
         'Status': shipment.status,
         'Departure Time': format(parseISO(shipment.departure_time), 'PPP p'),
         'Arrival Time': shipment.arrival_time ? format(parseISO(shipment.arrival_time), 'PPP p') : 'Not arrived',
