@@ -54,7 +54,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { icon: <BarChart3 className="w-5 h-5" />, label: 'Reports', path: '/reports' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', path: '/settings' },
     ...(user?.role === 'admin' ? [{ icon: <User className="w-5 h-5" />, label: 'UserManagement', path: '/users' }] : []),
-  ];
+  ];  
   
   const isActive = (path: string) => location.pathname === path;
 
