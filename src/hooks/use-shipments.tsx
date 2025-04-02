@@ -23,6 +23,7 @@ export interface Shipment {
   routeId?: string;
   billingRatePerTon?: number;
   vendorRatePerTon?: number;
+  created_at?: string;
 }
 
 // Convert DB format to app format
@@ -38,6 +39,7 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   arrivalTime: dbShipment.arrival_time,
   remarks: dbShipment.remarks,
   routeId: dbShipment.route_id,
+  created_at: dbShipment.created_at,
 });
 
 // Convert app format to DB format
@@ -47,7 +49,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   source: shipment.source,
   destination: shipment.destination,
   quantity_tons: shipment.quantityTons,
-  status: shipment.status,
+  status: shipment.status || 'Pending',
   departure_time: shipment.departureTime,
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
@@ -86,68 +88,80 @@ export const useShipments = () => {
   } = useQuery({
     queryKey: ['shipments'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shipments')
-        .select(`
-          *,
-          transporters:transporter_id (name),
-          vehicles:vehicle_id (vehicle_number),
-          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw new Error(error.message);
+      try {
+        const { data, error } = await supabase
+          .from('shipments')
+          .select(`
+            *,
+            transporters:transporter_id (name),
+            vehicles:vehicle_id (vehicle_number),
+            routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
+          `)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching shipments:', error);
+          throw new Error(error.message);
+        }
+        
+        return data.map((shipment: any) => ({
+          ...dbToAppShipment(shipment),
+          transporterName: shipment.transporters?.name || 'Unknown',
+          vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
+          billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
+          vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
+        }));
+      } catch (err) {
+        console.error('Error in shipments query:', err);
+        throw err;
       }
-      
-      return data.map((shipment: any) => ({
-        ...dbToAppShipment(shipment),
-        transporterName: shipment.transporters?.name || 'Unknown',
-        vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
-        billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
-        vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
-      }));
     }
   });
 
   // Mutation to add a new shipment
   const addShipmentMutation = useMutation({
     mutationFn: async (shipment: Omit<Shipment, 'id'>) => {
-      // Find route_id by source and destination if not provided
-      let shipmentData = appToDbShipment(shipment);
-      
-      // If we have source and destination but no route_id, try to find a matching route
-      if (!shipmentData.route_id && shipment.source && shipment.destination) {
-        const matchingRoute = routes.find(route => 
-          route.source.toLowerCase() === shipment.source.toLowerCase() && 
-          route.destination.toLowerCase() === shipment.destination.toLowerCase()
-        );
+      try {
+        // Find route_id by source and destination if not provided
+        let shipmentData = appToDbShipment(shipment);
         
-        if (matchingRoute) {
-          shipmentData.route_id = matchingRoute.id;
-          console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
+        // If we have source and destination but no route_id, try to find a matching route
+        if (!shipmentData.route_id && shipment.source && shipment.destination) {
+          const matchingRoute = routes.find(route => 
+            route.source.toLowerCase() === shipment.source.toLowerCase() && 
+            route.destination.toLowerCase() === shipment.destination.toLowerCase()
+          );
+          
+          if (matchingRoute) {
+            shipmentData.route_id = matchingRoute.id;
+            console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
+          }
         }
+        
+        const { data, error } = await supabase
+          .from('shipments')
+          .insert(shipmentData)
+          .select(`
+            *,
+            transporters:transporter_id (name),
+            vehicles:vehicle_id (vehicle_number)
+          `)
+          .single();
+        
+        if (error) {
+          console.error('Error adding shipment:', error);
+          throw new Error(error.message);
+        }
+        
+        return {
+          ...dbToAppShipment(data),
+          transporterName: data.transporters?.name || 'Unknown',
+          vehicleNumber: data.vehicles?.vehicle_number || 'Unknown',
+        };
+      } catch (err) {
+        console.error('Error in add shipment mutation:', err);
+        throw err;
       }
-      
-      const { data, error } = await supabase
-        .from('shipments')
-        .insert(shipmentData)
-        .select(`
-          *,
-          transporters:transporter_id (name),
-          vehicles:vehicle_id (vehicle_number)
-        `)
-        .single();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return {
-        ...dbToAppShipment(data),
-        transporterName: data.transporters?.name || 'Unknown',
-        vehicleNumber: data.vehicles?.vehicle_number || 'Unknown',
-      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
@@ -164,31 +178,40 @@ export const useShipments = () => {
   // Mutation to update a shipment
   const updateShipmentMutation = useMutation({
     mutationFn: async (shipment: Shipment) => {
-      let shipmentData = appToDbShipment(shipment);
-      
-      // If we have source and destination but no route_id, try to find a matching route
-      if (!shipmentData.route_id && shipment.source && shipment.destination) {
-        const matchingRoute = routes.find(route => 
-          route.source.toLowerCase() === shipment.source.toLowerCase() && 
-          route.destination.toLowerCase() === shipment.destination.toLowerCase()
-        );
+      try {
+        let shipmentData = appToDbShipment(shipment);
         
-        if (matchingRoute) {
-          shipmentData.route_id = matchingRoute.id;
-          console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
+        // If we have source and destination but no route_id, try to find a matching route
+        if (!shipmentData.route_id && shipment.source && shipment.destination) {
+          const matchingRoute = routes.find(route => 
+            route.source.toLowerCase() === shipment.source.toLowerCase() && 
+            route.destination.toLowerCase() === shipment.destination.toLowerCase()
+          );
+          
+          if (matchingRoute) {
+            shipmentData.route_id = matchingRoute.id;
+            console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
+          }
         }
+        
+        console.log('Updating shipment with data:', shipmentData);
+        console.log('Shipment ID:', shipment.id);
+        
+        const { error } = await supabase
+          .from('shipments')
+          .update(shipmentData)
+          .eq('id', shipment.id);
+        
+        if (error) {
+          console.error('Error updating shipment:', error);
+          throw new Error(error.message);
+        }
+        
+        return shipment;
+      } catch (err) {
+        console.error('Error in update shipment mutation:', err);
+        throw err;
       }
-      
-      const { error } = await supabase
-        .from('shipments')
-        .update(shipmentData)
-        .eq('id', shipment.id);
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return shipment;
     },
     onSuccess: (shipment) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
