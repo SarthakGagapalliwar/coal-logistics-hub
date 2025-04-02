@@ -20,7 +20,9 @@ export interface Shipment {
   departureTime: string;
   arrivalTime: string | null;
   remarks?: string;
-  routeId?: string; // Included routeId property
+  routeId?: string;
+  billingRatePerTon?: number;
+  vendorRatePerTon?: number;
 }
 
 // Convert DB format to app format
@@ -35,7 +37,7 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   departureTime: dbShipment.departure_time,
   arrivalTime: dbShipment.arrival_time,
   remarks: dbShipment.remarks,
-  routeId: dbShipment.route_id, // Map route_id from DB
+  routeId: dbShipment.route_id,
 });
 
 // Convert app format to DB format
@@ -49,7 +51,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   departure_time: shipment.departureTime,
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
-  route_id: shipment.routeId, // Include route_id in DB format
+  route_id: shipment.routeId,
 });
 
 export const useShipments = () => {
@@ -71,7 +73,9 @@ export const useShipments = () => {
     departureTime: '',
     arrivalTime: '',
     remarks: '',
-    routeId: '', // Added routeId to formData
+    routeId: '',
+    billingRatePerTon: null,
+    vendorRatePerTon: null,
   });
 
   // Query to fetch shipments
@@ -87,7 +91,8 @@ export const useShipments = () => {
         .select(`
           *,
           transporters:transporter_id (name),
-          vehicles:vehicle_id (vehicle_number)
+          vehicles:vehicle_id (vehicle_number),
+          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
         `)
         .order('created_at', { ascending: false });
       
@@ -99,6 +104,8 @@ export const useShipments = () => {
         ...dbToAppShipment(shipment),
         transporterName: shipment.transporters?.name || 'Unknown',
         vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
+        billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
+        vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
       }));
     }
   });
@@ -261,7 +268,9 @@ export const useShipments = () => {
       departureTime: shipment.departureTime,
       arrivalTime: shipment.arrivalTime || '',
       remarks: shipment.remarks || '',
-      routeId: shipment.routeId || '', // Include routeId
+      routeId: shipment.routeId || '',
+      billingRatePerTon: shipment.billingRatePerTon || null,
+      vendorRatePerTon: shipment.vendorRatePerTon || null,
     });
     setOpenDialog(true);
   };
@@ -285,7 +294,9 @@ export const useShipments = () => {
       departureTime: new Date().toISOString(),
       arrivalTime: '',
       remarks: '',
-      routeId: '', // Include routeId
+      routeId: '',
+      billingRatePerTon: null,
+      vendorRatePerTon: null,
     });
   };
 
@@ -303,7 +314,9 @@ export const useShipments = () => {
       departureTime: formData.departureTime,
       arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
-      routeId: formData.routeId || undefined, // Include routeId
+      routeId: formData.routeId || undefined,
+      billingRatePerTon: formData.billingRatePerTon,
+      vendorRatePerTon: formData.vendorRatePerTon,
     };
     
     if (selectedShipment) {

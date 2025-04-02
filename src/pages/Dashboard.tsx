@@ -69,6 +69,16 @@ const Dashboard = () => {
       cell: (row: any) => `${row.quantityTons} tons`,
     },
     {
+      header: "Billing Rate",
+      accessorKey: "billingRatePerTon",
+      cell: (row: any) => row.billingRatePerTon ? formatCurrency(row.billingRatePerTon) : "N/A",
+    },
+    {
+      header: "Vendor Rate",
+      accessorKey: "vendorRatePerTon",
+      cell: (row: any) => row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
+    },
+    {
       header: "Departure",
       accessorKey: "departureTime",
       cell: (row: any) => formatDate(row.departureTime),

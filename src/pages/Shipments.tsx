@@ -43,6 +43,7 @@ import { useShipments } from "@/hooks/use-shipments";
 import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
+import { formatCurrency } from "@/lib/data";
 
 const Shipments = () => {
   const {
@@ -106,6 +107,16 @@ const Shipments = () => {
       cell: (row: any) => `${row.quantityTons} tons`,
     },
     {
+      header: "Billing Rate",
+      accessorKey: "billingRatePerTon",
+      cell: (row: any) => row.billingRatePerTon ? formatCurrency(row.billingRatePerTon) : "N/A",
+    },
+    {
+      header: "Vendor Rate",
+      accessorKey: "vendorRatePerTon",
+      cell: (row: any) => row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
+    },
+    {
       header: "Departure",
       accessorKey: "departureTime",
       cell: (row: any) => formatDate(row.departureTime),
@@ -117,7 +128,7 @@ const Shipments = () => {
     },
   ];
 
-  // if (user?.role === "admin") {
+  if (user?.role === "admin") {
     columns.push({
       header: "Actions",
       accessorKey: "actions",
@@ -142,7 +153,7 @@ const Shipments = () => {
         </div>
       ),
     });
-  // }
+  }
 
   const mobileColumns = isMobile
     ? columns.filter((col) =>
@@ -378,24 +389,23 @@ const Shipments = () => {
                   </div>
                 </div>
 
-                
                 <div className="space-y-2">
-                    <Label htmlFor="quantityTons">Quantity (tons)</Label>
-                    <div className="relative">
-                      <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="quantityTons"
-                        name="quantityTons"
-                        type="number"
-                        min="1"
-                        placeholder="Enter quantity in tons"
-                        className="pl-10"
-                        value={formData.quantityTons}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
+                  <Label htmlFor="quantityTons">Quantity (tons)</Label>
+                  <div className="relative">
+                    <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="quantityTons"
+                      name="quantityTons"
+                      type="number"
+                      min="1"
+                      placeholder="Enter quantity in tons"
+                      className="pl-10"
+                      value={formData.quantityTons}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks (Optional)</Label>
