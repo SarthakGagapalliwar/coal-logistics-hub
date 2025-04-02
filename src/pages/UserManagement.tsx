@@ -48,6 +48,7 @@ interface User {
   username: string;
   role: UserRole;
   created_at: string;
+  password?: string; // Store password temporarily for admin view
 }
 
 const UserManagement = () => {
@@ -76,6 +77,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching users from profiles table...");
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, role, created_at")
@@ -85,21 +87,41 @@ const UserManagement = () => {
         throw error;
       }
 
+      console.log("Profiles data fetched:", data);
+
       // Fetch emails separately from auth.users
-      const emails = await Promise.all(
+      // Note: In a real app with admin access, you'd use Supabase admin functions
+      // For now, we'll use a workaround to approximate this functionality
+      const emailsData = await Promise.all(
         data.map(async (profile) => {
-          // In a real app, you'd need to use Admin API or service role
-          // For now, we'll simulate this by assuming email format
-          return {
-            id: profile.id,
-            email: profile.username + "@example.com",
-          };
+          // Try to fetch email from the auth schema (this is just for demo, in production use admin API)
+          try {
+            // We're making a direct query to mimic getting user data
+            // In a real app, you'd use supabase-js admin client or create a secure edge function
+            const { data: userData, error: userError } = await supabase
+              .rpc('get_user_email', { user_id: profile.id })
+              .select('email')
+              .single();
+
+            return {
+              id: profile.id,
+              email: userData?.email || `${profile.username}@example.com`, // Fallback for demo
+            };
+          } catch (err) {
+            console.error("Error fetching email for user:", err);
+            return {
+              id: profile.id,
+              email: `${profile.username}@example.com`, // Fallback email format
+            };
+          }
         })
       );
 
+      console.log("Emails data:", emailsData);
+
       // Combine profile data with emails
       const usersWithEmails = data.map((profile) => {
-        const emailData = emails.find((e) => e.id === profile.id);
+        const emailData = emailsData.find((e) => e.id === profile.id);
         return {
           ...profile,
           email: emailData?.email || "No email available",
@@ -132,7 +154,13 @@ const UserManagement = () => {
   const handleCreateUser = async () => {
     setIsLoading(true);
     try {
-      // Use the createUser method from AuthContext instead of direct admin API call
+      console.log("Creating new user with:", { 
+        email: formData.email, 
+        username: formData.username, 
+        role: formData.role 
+      });
+      
+      // Use the createUser method from AuthContext
       const success = await createUser(
         formData.email,
         formData.password,
@@ -142,9 +170,25 @@ const UserManagement = () => {
 
       if (success) {
         toast.success("User created successfully");
+        
+        // Add the newly created user to the list with the password for admin view
+        const newUser: User = {
+          id: "temp-" + Date.now(), // This will be replaced on next fetch
+          email: formData.email,
+          username: formData.username,
+          role: formData.role,
+          created_at: new Date().toISOString(),
+          password: formData.password // Store password temporarily for admin view
+        };
+        
+        setUsers([newUser, ...users]);
         setOpen(false);
         resetForm();
-        fetchUsers();
+        
+        // Refresh the user list after a short delay to get the actual user record
+        setTimeout(() => {
+          fetchUsers();
+        }, 1000);
       } else {
         toast.error("Failed to create user");
       }
@@ -291,12 +335,13 @@ const UserManagement = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Created</TableHead>
+                    {user.role === 'admin' && <TableHead>Password</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6">
+                      <TableCell colSpan={user.role === 'admin' ? 5 : 4} className="text-center py-6">
                         No users found
                       </TableCell>
                     </TableRow>
@@ -309,6 +354,11 @@ const UserManagement = () => {
                         <TableCell>
                           {new Date(user.created_at).toLocaleDateString()}
                         </TableCell>
+                        {user.role === 'admin' && (
+                          <TableCell>
+                            {user.password ? user.password : "••••••••"}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

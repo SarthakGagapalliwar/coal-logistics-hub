@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Table,
@@ -11,16 +10,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
-
-interface Column<T> {
-  header: string;
-  accessorKey: keyof T | string;
-  cell?: (item: T) => React.ReactNode;
-}
+import { Column } from "@/types/data-table";
 
 interface DataTableProps<T> {
   data: T[];
-  columns: Column<T>[];
+  columns: Column[];
   searchPlaceholder?: string;
   searchKey?: keyof T;
   onRowClick?: (item: T) => void;
@@ -39,7 +33,6 @@ const DataTable = <T extends Record<string, any>>({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Filter data based on search query
   const filteredData = searchKey && searchQuery
     ? data.filter(item => 
         String(item[searchKey])
@@ -48,12 +41,10 @@ const DataTable = <T extends Record<string, any>>({
       )
     : data;
 
-  // Paginate data
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -68,7 +59,7 @@ const DataTable = <T extends Record<string, any>>({
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             className="pl-10"
           />
@@ -126,7 +117,6 @@ const DataTable = <T extends Record<string, any>>({
             </Button>
             {[...Array(totalPages)].map((_, idx) => {
               const page = idx + 1;
-              // Show limited pagination numbers
               if (
                 page === 1 ||
                 page === totalPages ||

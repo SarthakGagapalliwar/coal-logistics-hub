@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -25,6 +26,7 @@ import { Plus, Edit, Trash, MapPin, FileText, DollarSign } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoutes } from "@/hooks/use-routes";
 import { useAuth } from "@/context/AuthContext";
+import { Column } from "@/types/data-table";
 
 const RoutesPage = () => {
   const {
@@ -48,7 +50,7 @@ const RoutesPage = () => {
   const { user } = useAuth();
 
   // Columns for the data table
-  const columns = [
+  const columns: Column[] = [
     {
       header: "ID",
       accessorKey: "id",

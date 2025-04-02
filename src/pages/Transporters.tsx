@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -35,6 +36,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransporters } from "@/hooks/use-transporters";
 import { useAuth } from "@/context/AuthContext";
+import { Column } from "@/types/data-table";
 
 const Transporters = () => {
   const {
@@ -58,7 +60,7 @@ const Transporters = () => {
   const { user } = useAuth();
 
   // Columns for the data table
-  const columns = [
+  const columns: Column[] = [
     {
       header: "ID",
       accessorKey: "id",

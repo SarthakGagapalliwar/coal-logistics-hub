@@ -42,6 +42,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useShipments } from "@/hooks/use-shipments";
 import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
+import { Column } from "@/types/data-table";
+import { formatCurrency } from "@/lib/data";
 
 const Shipments = () => {
   const {
@@ -78,7 +80,7 @@ const Shipments = () => {
     }
   };
 
-  const columns = [
+  const columns: Column[] = [
     {
       header: "ID",
       accessorKey: "id",
@@ -105,23 +107,14 @@ const Shipments = () => {
       cell: (row: any) => `${row.quantityTons} tons`,
     },
     {
-      header: "Status",
-      accessorKey: "status",
-      cell: (row: any) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.status === "Completed"
-              ? "bg-green-100 text-green-800"
-              : row.status === "In Transit"
-              ? "bg-blue-100 text-blue-800"
-              : row.status === "Pending"
-              ? "bg-amber-100 text-amber-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
+      header: "Billing Rate",
+      accessorKey: "billingRatePerTon",
+      cell: (row: any) => row.billingRatePerTon ? formatCurrency(row.billingRatePerTon) : "N/A",
+    },
+    {
+      header: "Vendor Rate",
+      accessorKey: "vendorRatePerTon",
+      cell: (row: any) => row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
     },
     {
       header: "Departure",
@@ -135,7 +128,7 @@ const Shipments = () => {
     },
   ];
 
-  // if (user?.role === "admin") {
+  if (user?.role === "admin") {
     columns.push({
       header: "Actions",
       accessorKey: "actions",
@@ -160,11 +153,11 @@ const Shipments = () => {
         </div>
       ),
     });
-  // }
+  }
 
   const mobileColumns = isMobile
     ? columns.filter((col) =>
-        ["Source", "Destination", "Status", "Actions"].includes(col.header)
+        ["Source", "Destination", "Actions"].includes(col.header)
       )
     : columns;
 
@@ -336,28 +329,6 @@ const Shipments = () => {
                     </Select>
                   </div>
 
-
-                  {/* <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) =>
-                        handleSelectChange("status", value)
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="In Transit">In Transit</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div> */}
-
                   <div className="space-y-2">
                     <Label htmlFor="departureTime">Departure Time</Label>
                     <div className="relative">
@@ -418,24 +389,23 @@ const Shipments = () => {
                   </div>
                 </div>
 
-                
                 <div className="space-y-2">
-                    <Label htmlFor="quantityTons">Quantity (tons)</Label>
-                    <div className="relative">
-                      <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="quantityTons"
-                        name="quantityTons"
-                        type="number"
-                        min="1"
-                        placeholder="Enter quantity in tons"
-                        className="pl-10"
-                        value={formData.quantityTons}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
+                  <Label htmlFor="quantityTons">Quantity (tons)</Label>
+                  <div className="relative">
+                    <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="quantityTons"
+                      name="quantityTons"
+                      type="number"
+                      min="1"
+                      placeholder="Enter quantity in tons"
+                      className="pl-10"
+                      value={formData.quantityTons}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks (Optional)</Label>
@@ -483,4 +453,3 @@ const Shipments = () => {
 };
 
 export default Shipments;
-
