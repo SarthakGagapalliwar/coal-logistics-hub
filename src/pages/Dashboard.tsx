@@ -35,6 +35,7 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import { Loader2 } from "lucide-react";
 import { useShipments } from "@/hooks/use-shipments";
 import { format } from 'date-fns';
+import { Column } from "@/types/data-table";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -48,7 +49,7 @@ const Dashboard = () => {
   };
 
   // Responsive columns for shipment table
-  const shipmentColumns = [
+  const shipmentColumns: Column[] = [
     {
       header: "ID",
       accessorKey: "id",
@@ -68,25 +69,6 @@ const Dashboard = () => {
       cell: (row: any) => `${row.quantityTons} tons`,
     },
     {
-      header: "Status",
-      accessorKey: "status",
-      cell: (row: any) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.status === "Completed"
-              ? "bg-green-100 text-green-800"
-              : row.status === "In Transit"
-              ? "bg-blue-100 text-blue-800"
-              : row.status === "Pending"
-              ? "bg-amber-100 text-amber-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
-    },
-    {
       header: "Departure",
       accessorKey: "departureTime",
       cell: (row: any) => formatDate(row.departureTime),
@@ -96,7 +78,7 @@ const Dashboard = () => {
   // For mobile, show fewer columns
   const mobileShipmentColumns = isMobile
     ? shipmentColumns.filter((col) =>
-        ["ID", "Transporter", "Status"].includes(col.header)
+        ["ID", "Transporter"].includes(col.header)
       )
     : shipmentColumns;
 

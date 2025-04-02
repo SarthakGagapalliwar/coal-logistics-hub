@@ -42,6 +42,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useShipments } from "@/hooks/use-shipments";
 import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
+import { Column } from "@/types/data-table";
 
 const Shipments = () => {
   const {
@@ -78,7 +79,7 @@ const Shipments = () => {
     }
   };
 
-  const columns = [
+  const columns: Column[] = [
     {
       header: "ID",
       accessorKey: "id",
@@ -103,25 +104,6 @@ const Shipments = () => {
       header: "Quantity",
       accessorKey: "quantityTons",
       cell: (row: any) => `${row.quantityTons} tons`,
-    },
-    {
-      header: "Status",
-      accessorKey: "status",
-      cell: (row: any) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.status === "Completed"
-              ? "bg-green-100 text-green-800"
-              : row.status === "In Transit"
-              ? "bg-blue-100 text-blue-800"
-              : row.status === "Pending"
-              ? "bg-amber-100 text-amber-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
     },
     {
       header: "Departure",
@@ -164,7 +146,7 @@ const Shipments = () => {
 
   const mobileColumns = isMobile
     ? columns.filter((col) =>
-        ["Source", "Destination", "Status", "Actions"].includes(col.header)
+        ["Source", "Destination", "Actions"].includes(col.header)
       )
     : columns;
 
@@ -336,28 +318,6 @@ const Shipments = () => {
                     </Select>
                   </div>
 
-
-                  {/* <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) =>
-                        handleSelectChange("status", value)
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="In Transit">In Transit</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div> */}
-
                   <div className="space-y-2">
                     <Label htmlFor="departureTime">Departure Time</Label>
                     <div className="relative">
@@ -483,4 +443,3 @@ const Shipments = () => {
 };
 
 export default Shipments;
-
