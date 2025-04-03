@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -27,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
 
-// Form schema for package creation/update
 const packageSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   description: z.string().optional(),
@@ -56,7 +54,6 @@ const PackageForm = () => {
   console.log("All users length:", allUsers?.length);
   console.log("Is loading users:", isLoadingUsers);
 
-  // Initialize form with default values or selected package
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageSchema),
     defaultValues: {
@@ -73,7 +70,6 @@ const PackageForm = () => {
     },
   });
 
-  // Update form values when selected package changes
   useEffect(() => {
     if (selectedPackage) {
       form.reset({
@@ -89,7 +85,6 @@ const PackageForm = () => {
         billingRate: selectedPackage.billingRate || null,
       });
       
-      // If route is selected, update rate values
       if (selectedPackage.routeId) {
         const selectedRoute = routes.find(r => r.id === selectedPackage.routeId);
         if (selectedRoute) {
@@ -102,7 +97,6 @@ const PackageForm = () => {
     }
   }, [selectedPackage, routes, form]);
 
-  // Handle route change to update rate values
   const handleRouteChange = (routeId: string) => {
     const selectedRoute = routes.find(r => r.id === routeId);
     if (selectedRoute) {
@@ -120,9 +114,7 @@ const PackageForm = () => {
     }
   };
 
-  // Handle form submission
   const onSubmit = (values: PackageFormValues) => {
-    // Ensure required fields are present
     const packageData = {
       name: values.name,
       description: values.description,
@@ -137,20 +129,17 @@ const PackageForm = () => {
     };
 
     if (selectedPackage) {
-      // Update existing package
       updatePackageMutation.mutate({
         id: selectedPackage.id,
         ...packageData,
       });
     } else {
-      // Create new package
       addPackageMutation.mutate(packageData);
     }
   };
 
   const isSubmitting = addPackageMutation.isPending || updatePackageMutation.isPending;
 
-  // Generate a random tracking number
   const generateTrackingNumber = () => {
     const prefix = 'PKG';
     const randomPart = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
