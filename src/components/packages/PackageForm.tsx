@@ -297,8 +297,8 @@ const PackageForm = () => {
                 <Select 
                   value={field.value || ""} 
                   onValueChange={(value) => {
-                    field.onChange(value || null);
-                    if (value) handleRouteChange(value);
+                    field.onChange(value === "none" ? null : value);
+                    if (value !== "none") handleRouteChange(value);
                   }}
                 >
                   <FormControl>
@@ -307,7 +307,7 @@ const PackageForm = () => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {routes.map((route) => (
                       <SelectItem key={route.id} value={route.id}>
                         {route.source} to {route.destination} ({route.distanceKm} km)
@@ -329,7 +329,7 @@ const PackageForm = () => {
                   <FormLabel>Assign User</FormLabel>
                   <Select 
                     value={field.value || ""} 
-                    onValueChange={(value) => field.onChange(value || null)}
+                    onValueChange={(value) => field.onChange(value === "none" ? null : value)}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -337,7 +337,7 @@ const PackageForm = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.username}
