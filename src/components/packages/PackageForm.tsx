@@ -46,9 +46,15 @@ type PackageFormValues = z.infer<typeof packageSchema>;
 const PackageForm = () => {
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const { selectedPackage, addPackageMutation, updatePackageMutation, allUsers } = usePackages();
+  const { selectedPackage, addPackageMutation, updatePackageMutation, allUsers, isLoadingUsers } = usePackages();
   const { routes } = useRoutes();
   const [routeRates, setRouteRates] = useState<{ billing: number | null, vendor: number | null }>({ billing: null, vendor: null });
+
+  console.log("Current user:", user);
+  console.log("Is admin:", isAdmin);
+  console.log("All users data:", allUsers);
+  console.log("All users length:", allUsers?.length);
+  console.log("Is loading users:", isLoadingUsers);
 
   // Initialize form with default values or selected package
   const form = useForm<PackageFormValues>({
@@ -320,13 +326,24 @@ const PackageForm = () => {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      {allUsers.map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.username} {user.role === 'admin' ? '(Admin)' : ''}
-                        </SelectItem>
-                      ))}
+                      {isLoadingUsers ? (
+                        <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                      ) : allUsers && allUsers.length > 0 ? (
+                        allUsers.map((user: any) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.username} {user.role === 'admin' ? '(Admin)' : ''}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-users" disabled>No users found</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {allUsers && allUsers.length > 0 ? (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {allUsers.length} user{allUsers.length !== 1 ? 's' : ''} available
+                    </div>
+                  ) : null}
                   <FormMessage />
                 </FormItem>
               )}

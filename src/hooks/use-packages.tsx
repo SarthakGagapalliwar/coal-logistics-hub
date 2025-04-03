@@ -86,10 +86,12 @@ export const usePackages = () => {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
   // Fetch all users for admin assignment
-  const { data: allUsers = [] } = useQuery({
+  const { data: allUsers = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
       if (!user || !isAdmin) return [];
+      
+      console.log("Fetching all users for admin assignment");
       
       const { data, error } = await supabase
         .from('profiles')
@@ -100,7 +102,8 @@ export const usePackages = () => {
         return [];
       }
       
-      return data;
+      console.log("Users fetched for assignment:", data);
+      return data || [];
     },
     enabled: !!user && isAdmin
   });
@@ -116,13 +119,12 @@ export const usePackages = () => {
     queryFn: async () => {
       if (!user) return [];
       
+      console.log("Fetching packages");
+      
       // Step 1: Get packages with route information
       let query = supabase
         .from('packages')
-        .select(`
-          *,
-          routes (id, source, destination)
-        `);
+        .select(`*`);
       
       // If not admin, only fetch packages for this user
       if (!isAdmin) {
@@ -132,42 +134,76 @@ export const usePackages = () => {
       const { data: packagesData, error } = await query;
       
       if (error) {
+        console.error('Error fetching packages:', error);
         throw new Error(error.message);
       }
       
-      // Step 2: Fetch user information separately
+      console.log("Packages fetched:", packagesData);
+      
+      // Step 2: Fetch route information separately
+      const routeIds = packagesData
+        .map((pkg: any) => pkg.route_id)
+        .filter((id: string | null) => id !== null);
+        
+      let routesData = [];
+      if (routeIds.length > 0) {
+        const { data: routes, error: routesError } = await supabase
+          .from('routes')
+          .select('id, source, destination')
+          .in('id', routeIds);
+          
+        if (routesError) {
+          console.error('Error fetching routes:', routesError);
+        } else {
+          routesData = routes || [];
+          console.log("Routes fetched:", routesData);
+        }
+      }
+      
+      // Step 3: Fetch user information separately
       const userIds = packagesData
         .map((pkg: any) => pkg.assigned_user_id)
         .filter((id: string | null) => id !== null);
         
-      const { data: usersData, error: usersError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .in('id', userIds);
-        
-      if (usersError) {
-        console.error('Error fetching users:', usersError);
-        // Continue with what we have
+      let usersData = [];
+      if (userIds.length > 0) {
+        const { data: users, error: usersError } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds);
+          
+        if (usersError) {
+          console.error('Error fetching users:', usersError);
+        } else {
+          usersData = users || [];
+          console.log("Users fetched for packages:", usersData);
+        }
       }
       
-      // Create a map of user ids to usernames
-      const userMap = (usersData || []).reduce((map: Record<string, string>, user: any) => {
+      // Create maps for quick lookups
+      const routeMap = routesData.reduce((map: Record<string, any>, route: any) => {
+        map[route.id] = route;
+        return map;
+      }, {});
+      
+      const userMap = usersData.reduce((map: Record<string, string>, user: any) => {
         map[user.id] = user.username;
         return map;
       }, {});
       
-      // Combine the data
+      // Combine all data
       return packagesData.map((item: any): Package => {
         const pkg = dbToAppPackage(item as DbPackage);
         
         // Add route info
-        if (item.routes) {
-          pkg.routeName = `${item.routes.source} to ${item.routes.destination}`;
-          pkg.source = item.routes.source;
-          pkg.destination = item.routes.destination;
+        if (pkg.routeId && routeMap[pkg.routeId]) {
+          const route = routeMap[pkg.routeId];
+          pkg.routeName = `${route.source} to ${route.destination}`;
+          pkg.source = route.source;
+          pkg.destination = route.destination;
         }
         
-        // Add user info from the separate query
+        // Add user info
         if (pkg.assignedUserId && userMap[pkg.assignedUserId]) {
           pkg.assignedUsername = userMap[pkg.assignedUserId];
         }
@@ -291,6 +327,7 @@ export const usePackages = () => {
     handleAddPackage,
     handleDeletePackage,
     isDeleting: deletePackageMutation.isPending,
+    isLoadingUsers,
     refetch,
     allUsers
   };
