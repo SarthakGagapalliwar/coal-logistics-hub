@@ -93,16 +93,19 @@ export const usePackages = () => {
       
       console.log("Fetching all users for admin assignment");
       
+      // Using the new RLS policy, admin can fetch all profiles
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, role');
         
       if (error) {
         console.error('Error fetching users:', error);
+        toast.error(`Failed to fetch users: ${error.message}`);
         return [];
       }
       
       console.log("Users fetched for assignment:", data);
+      console.log("Total users found:", data ? data.length : 0);
       return data || [];
     },
     enabled: !!user && isAdmin
