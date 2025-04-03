@@ -9,6 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      packages: {
+        Row: {
+          assigned_user_id: string | null
+          billing_rate: number | null
+          created_at: string
+          created_by_id: string
+          description: string | null
+          dimensions: string | null
+          id: string
+          name: string
+          route_id: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          vendor_rate: number | null
+          weight_kg: number
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          billing_rate?: number | null
+          created_at?: string
+          created_by_id: string
+          description?: string | null
+          dimensions?: string | null
+          id?: string
+          name: string
+          route_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          vendor_rate?: number | null
+          weight_kg: number
+        }
+        Update: {
+          assigned_user_id?: string | null
+          billing_rate?: number | null
+          created_at?: string
+          created_by_id?: string
+          description?: string | null
+          dimensions?: string | null
+          id?: string
+          name?: string
+          route_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          vendor_rate?: number | null
+          weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

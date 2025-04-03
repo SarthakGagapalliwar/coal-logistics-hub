@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -13,7 +12,8 @@ import {
   LogOut,
   Menu,
   User,
-  X
+  X,
+  Box
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -51,6 +51,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { icon: <Car className="w-5 h-5" />, label: 'Vehicles', path: '/vehicles' },
     { icon: <Route className="w-5 h-5" />, label: 'Routes', path: '/routes' },
     { icon: <Package className="w-5 h-5" />, label: 'Shipments', path: '/shipments' },
+    { icon: <Box className="w-5 h-5" />, label: 'Packages', path: '/packages' },
     { icon: <BarChart3 className="w-5 h-5" />, label: 'Reports', path: '/reports' },
     { icon: <Settings className="w-5 h-5" />, label: 'Settings', path: '/settings' },
     ...(user?.role === 'admin' ? [{ icon: <User className="w-5 h-5" />, label: 'UserManagement', path: '/users' }] : []),
@@ -58,17 +59,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   
   const isActive = (path: string) => location.pathname === path;
 
-  // Check if we're on the home page
   const isHomePage = location.pathname === '/';
 
-  // If it's the home page and user is not logged in, don't show the dashboard layout
   if (isHomePage && !user) {
     return <>{children}</>;
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Desktop Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex md:flex-col">
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-xl font-bold">Coal Logistics</h1>
@@ -115,7 +113,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
       </aside>
 
-      {/* Mobile Navigation */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
           <h1 className="text-xl font-bold">Coal Logistics</h1>
@@ -190,9 +187,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
       </div>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto pt-0 md:pt-0">
-        {/* Mobile page padding to account for fixed header */}
         <div className="md:hidden h-16"></div>
         <div className="p-4 md:p-6">
           {children}
