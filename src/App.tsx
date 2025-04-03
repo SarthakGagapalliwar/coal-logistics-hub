@@ -17,6 +17,7 @@ import Shipments from "./pages/Shipments";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
+import Packages from "./pages/Packages";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,11 @@ const AppRoutes = () => {
       <Route path="/shipments" element={
         <ProtectedRoute>
           <Shipments />
+        </ProtectedRoute>
+      } />
+      <Route path="/packages" element={
+        <ProtectedRoute>
+          <Packages />
         </ProtectedRoute>
       } />
       <Route path="/reports" element={

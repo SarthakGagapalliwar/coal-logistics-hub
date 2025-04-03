@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Table,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Column } from "@/types/data-table";
 
 interface DataTableProps<T> {
@@ -19,6 +20,7 @@ interface DataTableProps<T> {
   searchKey?: keyof T;
   onRowClick?: (item: T) => void;
   className?: string;
+  isLoading?: boolean;
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -28,6 +30,7 @@ const DataTable = <T extends Record<string, any>>({
   searchKey,
   onRowClick,
   className = "",
+  isLoading = false,
 }: DataTableProps<T>) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -76,7 +79,16 @@ const DataTable = <T extends Record<string, any>>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <div className="flex justify-center items-center">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    <span>Loading...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results found.

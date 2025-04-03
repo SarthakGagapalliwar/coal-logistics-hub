@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -13,7 +12,8 @@ import {
   Menu,
   X,
   User,
-  Users
+  Users,
+  Box
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -66,33 +66,29 @@ const Navbar: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
-  // Only show navbar when user is authenticated
   if (!user) return null;
 
-  // These items are shown to all users
   const navItems = [
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
     { to: '/vehicles', icon: <Truck size={20} />, label: 'Vehicles' },
     { to: '/routes', icon: <Route size={20} />, label: 'Routes' },
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
+    { to: '/packages', icon: <Box size={20} />, label: 'Packages' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
     { to: '/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
 
-  // Admin-only items
   const adminItems = [
     { to: '/users', icon: <Users size={20} />, label: 'User Management' },
   ];
 
-  // Combine regular items with admin items if the user is an admin
   const items = user.role === 'admin' 
     ? [...navItems, ...adminItems] 
     : navItems;
 
   return (
     <>
-      {/* Desktop sidebar */}
       <aside 
         className={cn(
           "fixed inset-y-0 left-0 w-64 border-r bg-card z-30 transition-all duration-300 ease-in-out",
@@ -141,7 +137,6 @@ const Navbar: React.FC = () => {
         </div>
       </aside>
 
-      {/* Mobile header */}
       <header 
         className={cn(
           "sticky top-0 z-30 flex h-16 items-center justify-between bg-background/95 px-4 backdrop-blur lg:hidden",
@@ -164,7 +159,6 @@ const Navbar: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -172,7 +166,6 @@ const Navbar: React.FC = () => {
         />
       )}
 
-      {/* Mobile menu sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-3/4 max-w-xs bg-card border-r transition-transform duration-300 ease-in-out lg:hidden",
