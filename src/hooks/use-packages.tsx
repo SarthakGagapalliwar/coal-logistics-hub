@@ -89,18 +89,19 @@ export const usePackages = () => {
   const { 
     data: packages = [], 
     isLoading, 
-    error 
+    error,
+    refetch
   } = useQuery({
     queryKey: ['packages'],
     queryFn: async () => {
       if (!user) return [];
       
+      // Step 1: Get packages with route information
       let query = supabase
         .from('packages')
         .select(`
           *,
-          routes (id, source, destination),
-          profiles (id, username)
+          routes (id, source, destination)
         `);
       
       // If not admin, only fetch packages for this user
@@ -108,24 +109,47 @@ export const usePackages = () => {
         query = query.or(`assigned_user_id.eq.${user.id},created_by_id.eq.${user.id}`);
       }
       
-      const { data, error } = await query;
+      const { data: packagesData, error } = await query;
       
       if (error) {
         throw new Error(error.message);
       }
       
-      return data.map((item: any): Package => {
+      // Step 2: Fetch user information separately
+      const userIds = packagesData
+        .map((pkg: any) => pkg.assigned_user_id)
+        .filter((id: string | null) => id !== null);
+        
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds);
+        
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        // Continue with what we have
+      }
+      
+      // Create a map of user ids to usernames
+      const userMap = (usersData || []).reduce((map: Record<string, string>, user: any) => {
+        map[user.id] = user.username;
+        return map;
+      }, {});
+      
+      // Combine the data
+      return packagesData.map((item: any): Package => {
         const pkg = dbToAppPackage(item as DbPackage);
         
-        // Add route and user info
+        // Add route info
         if (item.routes) {
           pkg.routeName = `${item.routes.source} to ${item.routes.destination}`;
           pkg.source = item.routes.source;
           pkg.destination = item.routes.destination;
         }
         
-        if (item.profiles) {
-          pkg.assignedUsername = item.profiles.username;
+        // Add user info from the separate query
+        if (pkg.assignedUserId && userMap[pkg.assignedUserId]) {
+          pkg.assignedUsername = userMap[pkg.assignedUserId];
         }
         
         return pkg;
@@ -246,6 +270,7 @@ export const usePackages = () => {
     handleEditPackage,
     handleAddPackage,
     handleDeletePackage,
-    isDeleting: deletePackageMutation.isPending
+    isDeleting: deletePackageMutation.isPending,
+    refetch
   };
 };
