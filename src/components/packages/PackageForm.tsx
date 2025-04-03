@@ -134,15 +134,29 @@ const PackageForm = () => {
 
   // Handle form submission
   const onSubmit = (values: PackageFormValues) => {
+    // Ensure required fields are present
+    const packageData = {
+      name: values.name,
+      description: values.description,
+      weightKg: values.weightKg,
+      dimensions: values.dimensions,
+      status: values.status,
+      routeId: values.routeId,
+      assignedUserId: values.assignedUserId,
+      trackingNumber: values.trackingNumber,
+      vendorRate: values.vendorRate,
+      billingRate: values.billingRate,
+    };
+
     if (selectedPackage) {
       // Update existing package
       updatePackageMutation.mutate({
         id: selectedPackage.id,
-        ...values,
+        ...packageData,
       });
     } else {
       // Create new package
-      addPackageMutation.mutate(values);
+      addPackageMutation.mutate(packageData);
     }
   };
 

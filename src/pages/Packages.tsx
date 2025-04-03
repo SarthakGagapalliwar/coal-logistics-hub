@@ -99,7 +99,7 @@ const Packages = () => {
       case 'in transit':
         return 'default';
       case 'delivered':
-        return 'success';
+        return 'success' as const;
       case 'cancelled':
         return 'destructive';
       default:
