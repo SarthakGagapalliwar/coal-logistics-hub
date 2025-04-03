@@ -85,6 +85,26 @@ export const usePackages = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
+  // Fetch all users for admin assignment
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      if (!user || !isAdmin) return [];
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, role');
+        
+      if (error) {
+        console.error('Error fetching users:', error);
+        return [];
+      }
+      
+      return data;
+    },
+    enabled: !!user && isAdmin
+  });
+
   // Query to fetch packages
   const { 
     data: packages = [], 
@@ -271,6 +291,7 @@ export const usePackages = () => {
     handleAddPackage,
     handleDeletePackage,
     isDeleting: deletePackageMutation.isPending,
-    refetch
+    refetch,
+    allUsers
   };
 };

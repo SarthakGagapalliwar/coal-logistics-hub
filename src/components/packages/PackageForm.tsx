@@ -6,8 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
 import { usePackages } from '@/hooks/use-packages';
 import { useRoutes } from '@/hooks/use-routes';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 
 import {
   Form,
@@ -48,26 +46,10 @@ type PackageFormValues = z.infer<typeof packageSchema>;
 const PackageForm = () => {
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const { selectedPackage, addPackageMutation, updatePackageMutation } = usePackages();
+  const { selectedPackage, addPackageMutation, updatePackageMutation, allUsers } = usePackages();
   const { routes } = useRoutes();
   const [routeRates, setRouteRates] = useState<{ billing: number | null, vendor: number | null }>({ billing: null, vendor: null });
 
-  // Fetch all users for user assignment (admin only)
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      if (!isAdmin || !isAuthenticated) return [];
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: isAdmin && isAuthenticated,
-  });
-  
   // Initialize form with default values or selected package
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageSchema),
@@ -338,9 +320,9 @@ const PackageForm = () => {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      {users.map((user) => (
+                      {allUsers.map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
-                          {user.username}
+                          {user.username} {user.role === 'admin' ? '(Admin)' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>

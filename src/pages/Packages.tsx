@@ -58,7 +58,7 @@ const Packages = () => {
       header: "Route", 
       accessorKey: "routeName",
       cell: (row: any) => (
-        <span>{row.routeName ? `${row.routeName} (${row.source} to ${row.destination})` : '-'}</span>
+        <span>{row.routeName ? row.routeName : '-'}</span>
       )
     },
     { 
@@ -76,17 +76,19 @@ const Packages = () => {
           <Button variant="ghost" size="icon" onClick={() => handleEditPackage(row)}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-destructive"
-            onClick={() => {
-              setPackageToDelete(row.id);
-              setShowDeleteAlert(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {isAdmin && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-destructive"
+              onClick={() => {
+                setPackageToDelete(row.id);
+                setShowDeleteAlert(true);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -107,13 +109,27 @@ const Packages = () => {
     }
   };
 
+  const getTitle = () => {
+    if (isAdmin) {
+      return "Package Management";
+    }
+    return "My Assigned Packages";
+  };
+
+  const getDescription = () => {
+    if (isAdmin) {
+      return "Manage all packages in the system";
+    }
+    return "View packages assigned to you";
+  };
+
   return (
     <DashboardLayout>
       <PageTransition>
         <div className="container mx-auto py-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Package Management</h1>
-            {(isAdmin || user) && (
+            <h1 className="text-3xl font-bold">{getTitle()}</h1>
+            {isAdmin && (
               <Button onClick={handleAddPackage}>
                 <Plus className="mr-2 h-4 w-4" /> Add Package
               </Button>
@@ -122,12 +138,8 @@ const Packages = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>All Packages</CardTitle>
-              <CardDescription>
-                {isAdmin 
-                  ? "Manage all packages in the system" 
-                  : "View and manage packages assigned to you"}
-              </CardDescription>
+              <CardTitle>{isAdmin ? "All Packages" : "My Packages"}</CardTitle>
+              <CardDescription>{getDescription()}</CardDescription>
             </CardHeader>
             <CardContent>
               <DataTable
