@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -296,7 +295,7 @@ const Shipments = () => {
                           <SelectValue placeholder="Select a package" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                           {packages.map((pkg) => (
                             <SelectItem key={pkg.id} value={pkg.id}>
                               {pkg.name}

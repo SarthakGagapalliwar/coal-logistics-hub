@@ -37,7 +37,7 @@ const appToDbRoute = (route: Partial<Route>) => ({
   billing_rate_per_ton: route.billingRatePerTon,
   vendor_rate_per_ton: route.vendorRatePerTon,
   estimated_time: route.estimatedTime || 0,
-  assigned_package_id: route.assignedPackageId,
+  assigned_package_id: route.assignedPackageId && route.assignedPackageId !== "none" ? route.assignedPackageId : null,
 });
 
 // Isolate the data fetching function
@@ -66,7 +66,7 @@ export const useRoutes = () => {
     billingRatePerTon: '',
     vendorRatePerTon: '',
     estimatedTime: '',
-    assignedPackageId: '',
+    assignedPackageId: 'none',
   });
 
   // Query to fetch routes
@@ -187,7 +187,7 @@ export const useRoutes = () => {
       billingRatePerTon: route.billingRatePerTon.toString(),
       vendorRatePerTon: route.vendorRatePerTon.toString(),
       estimatedTime: route.estimatedTime.toString(),
-      assignedPackageId: route.assignedPackageId || '',
+      assignedPackageId: route.assignedPackageId || 'none',
     });
     setOpenDialog(true);
   };
@@ -208,7 +208,7 @@ export const useRoutes = () => {
       billingRatePerTon: '',
       vendorRatePerTon: '',
       estimatedTime: '',
-      assignedPackageId: '',
+      assignedPackageId: 'none',
     });
   };
 
@@ -223,7 +223,7 @@ export const useRoutes = () => {
       billingRatePerTon: Number(formData.billingRatePerTon),
       vendorRatePerTon: Number(formData.vendorRatePerTon),
       estimatedTime: Number(formData.estimatedTime || '0'),
-      assignedPackageId: formData.assignedPackageId || undefined,
+      assignedPackageId: formData.assignedPackageId === 'none' ? undefined : formData.assignedPackageId,
     };
     
     if (selectedRoute) {
