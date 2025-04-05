@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import DataTable from "@/components/ui-custom/DataTable";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/context/AuthContext';
 import { usePackages } from "@/hooks/use-packages";
 import PackageForm from "@/components/packages/PackageForm";
@@ -47,25 +46,7 @@ const Packages = () => {
   const [packageToDelete, setPackageToDelete] = useState<string | null>(null);
 
   const columns = [
-    { header: "Tracking Number", accessorKey: "trackingNumber" },
     { header: "Name", accessorKey: "name" },
-    { header: "Weight (kg)", accessorKey: "weightKg" },
-    { header: "Dimensions", accessorKey: "dimensions" },
-    { header: "Status", accessorKey: "status", cell: (row: any) => (
-      <Badge variant={getStatusVariant(row.status)}>{row.status}</Badge>
-    )},
-    { 
-      header: "Route", 
-      accessorKey: "routeName",
-      cell: (row: any) => (
-        <span>{row.routeName ? row.routeName : '-'}</span>
-      )
-    },
-    { 
-      header: "Assigned User", 
-      accessorKey: "assignedUsername",
-      cell: (row: any) => <span>{row.assignedUsername || '-'}</span>
-    },
     { header: "Vendor Rate", accessorKey: "vendorRate" },
     { header: "Billing Rate", accessorKey: "billingRate" },
     {
@@ -93,21 +74,6 @@ const Packages = () => {
       ),
     },
   ];
-
-  const getStatusVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'outline';
-      case 'in transit':
-        return 'default';
-      case 'delivered':
-        return 'success' as const;
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
 
   const getTitle = () => {
     if (isAdmin) {

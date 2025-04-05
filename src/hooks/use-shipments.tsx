@@ -1,10 +1,12 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { useTransporters } from './use-transporters';
-import { useVehicles } from './use-vehicles';
-import { useRoutes } from './use-routes';
+import { fetchTransporters } from './use-transporters';
+import { fetchVehicles } from './use-vehicles';
+import { fetchRoutes } from './use-routes';
+import { fetchPackages } from './use-packages';
 
 // Type for our app's shipment format
 export interface Shipment {
@@ -21,6 +23,7 @@ export interface Shipment {
   arrivalTime: string | null;
   remarks?: string;
   routeId?: string;
+  packageId?: string;
   billingRatePerTon?: number;
   vendorRatePerTon?: number;
   created_at?: string;
@@ -39,6 +42,7 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   arrivalTime: dbShipment.arrival_time,
   remarks: dbShipment.remarks,
   routeId: dbShipment.route_id,
+  packageId: dbShipment.package_id,
   created_at: dbShipment.created_at,
 });
 
@@ -54,16 +58,65 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
   route_id: shipment.routeId,
+  package_id: shipment.packageId && shipment.packageId !== 'none' ? shipment.packageId : null,
 });
+
+// Isolate the data fetching function
+export const fetchShipments = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('shipments')
+      .select(`
+        *,
+        transporters:transporter_id (name),
+        vehicles:vehicle_id (vehicle_number),
+        routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching shipments:', error);
+      throw new Error(error.message);
+    }
+    
+    return data.map((shipment: any) => ({
+      ...dbToAppShipment(shipment),
+      transporterName: shipment.transporters?.name || 'Unknown',
+      vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
+      billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
+      vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
+    }));
+  } catch (err) {
+    console.error('Error in shipments query:', err);
+    throw err;
+  }
+};
 
 export const useShipments = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   
-  const { transporters } = useTransporters();
-  const { vehicles } = useVehicles();
-  const { routes } = useRoutes();
+  // Use separate queries for related data
+  const { data: transporters = [] } = useQuery({
+    queryKey: ['transporters'],
+    queryFn: fetchTransporters
+  });
+  
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: fetchVehicles
+  });
+  
+  const { data: routes = [] } = useQuery({
+    queryKey: ['routes'],
+    queryFn: fetchRoutes
+  });
+  
+  const { data: packages = [] } = useQuery({
+    queryKey: ['packagesForShipments'],
+    queryFn: fetchPackages
+  });
   
   const [formData, setFormData] = useState({
     transporterId: '',
@@ -76,6 +129,7 @@ export const useShipments = () => {
     arrivalTime: '',
     remarks: '',
     routeId: '',
+    packageId: 'none',
     billingRatePerTon: null,
     vendorRatePerTon: null,
   });
@@ -87,35 +141,7 @@ export const useShipments = () => {
     error 
   } = useQuery({
     queryKey: ['shipments'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('shipments')
-          .select(`
-            *,
-            transporters:transporter_id (name),
-            vehicles:vehicle_id (vehicle_number),
-            routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
-          `)
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('Error fetching shipments:', error);
-          throw new Error(error.message);
-        }
-        
-        return data.map((shipment: any) => ({
-          ...dbToAppShipment(shipment),
-          transporterName: shipment.transporters?.name || 'Unknown',
-          vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
-          billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
-          vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
-        }));
-      } catch (err) {
-        console.error('Error in shipments query:', err);
-        throw err;
-      }
-    }
+    queryFn: fetchShipments
   });
 
   // Mutation to add a new shipment
@@ -127,16 +153,25 @@ export const useShipments = () => {
         
         // If we have source and destination but no route_id, try to find a matching route
         if (!shipmentData.route_id && shipment.source && shipment.destination) {
-          const matchingRoute = routes.find(route => 
-            route.source.toLowerCase() === shipment.source.toLowerCase() && 
-            route.destination.toLowerCase() === shipment.destination.toLowerCase()
-          );
+          // If package is selected, filter routes by package
+          const matchingRoute = shipment.packageId && shipment.packageId !== 'none'
+            ? routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase() &&
+                route.assignedPackageId === shipment.packageId
+              )
+            : routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase()
+              );
           
           if (matchingRoute) {
             shipmentData.route_id = matchingRoute.id;
             console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
           }
         }
+        
+        console.log('Creating shipment with data:', shipmentData);
         
         const { data, error } = await supabase
           .from('shipments')
@@ -183,10 +218,17 @@ export const useShipments = () => {
         
         // If we have source and destination but no route_id, try to find a matching route
         if (!shipmentData.route_id && shipment.source && shipment.destination) {
-          const matchingRoute = routes.find(route => 
-            route.source.toLowerCase() === shipment.source.toLowerCase() && 
-            route.destination.toLowerCase() === shipment.destination.toLowerCase()
-          );
+          // If package is selected, filter routes by package
+          const matchingRoute = shipment.packageId && shipment.packageId !== 'none'
+            ? routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase() &&
+                route.assignedPackageId === shipment.packageId
+              )
+            : routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase()
+              );
           
           if (matchingRoute) {
             shipmentData.route_id = matchingRoute.id;
@@ -265,12 +307,21 @@ export const useShipments = () => {
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     
+    // If we're selecting a package, clear route selection
+    if (name === 'packageId') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        routeId: '' // Reset route when package changes
+      }));
+    }
     // If we're selecting a route, auto-fill source and destination
-    if (name === 'routeId') {
+    else if (name === 'routeId' && value) {
       const selectedRoute = routes.find(route => route.id === value);
       if (selectedRoute) {
         setFormData(prev => ({
           ...prev,
+          [name]: value,
           source: selectedRoute.source,
           destination: selectedRoute.destination,
         }));
@@ -292,6 +343,7 @@ export const useShipments = () => {
       arrivalTime: shipment.arrivalTime || '',
       remarks: shipment.remarks || '',
       routeId: shipment.routeId || '',
+      packageId: shipment.packageId || 'none',
       billingRatePerTon: shipment.billingRatePerTon || null,
       vendorRatePerTon: shipment.vendorRatePerTon || null,
     });
@@ -318,6 +370,7 @@ export const useShipments = () => {
       arrivalTime: '',
       remarks: '',
       routeId: '',
+      packageId: 'none',
       billingRatePerTon: null,
       vendorRatePerTon: null,
     });
@@ -338,6 +391,7 @@ export const useShipments = () => {
       arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
       routeId: formData.routeId || undefined,
+      packageId: formData.packageId === 'none' ? undefined : formData.packageId,
       billingRatePerTon: formData.billingRatePerTon,
       vendorRatePerTon: formData.vendorRatePerTon,
     };
@@ -379,5 +433,6 @@ export const useShipments = () => {
     transporters,
     vehicles,
     routes,
+    packages,
   };
 };

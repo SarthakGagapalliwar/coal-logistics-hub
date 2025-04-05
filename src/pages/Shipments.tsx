@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -36,6 +37,7 @@ import {
   Truck,
   Weight,
   Calendar,
+  Package,
 } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,6 +46,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
 import { formatCurrency } from "@/lib/data";
+import { usePackages } from "@/hooks/use-packages";
 
 const Shipments = () => {
   const {
@@ -65,10 +68,10 @@ const Shipments = () => {
     transporters,
     vehicles,
     routes,
+    packages,
   } = useShipments();
-
+  
   const isMobile = useIsMobile();
-
   const { user } = useAuth();
 
   const formatDate = (dateString: string | null) => {
@@ -79,6 +82,11 @@ const Shipments = () => {
       return "Invalid date";
     }
   };
+
+  // Filter routes based on selected package
+  const filteredRoutes = formData.packageId && formData.packageId !== 'none'
+    ? routes.filter(route => route.assignedPackageId === formData.packageId)
+    : routes;
 
   const columns: Column[] = [
     {
@@ -115,6 +123,15 @@ const Shipments = () => {
       header: "Vendor Rate",
       accessorKey: "vendorRatePerTon",
       cell: (row: any) => row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
+    },
+    {
+      header: "Associated Package",
+      accessorKey: "packageId",
+      cell: (row: any) => {
+        if (!row.packageId) return "None";
+        const pkg = packages.find(p => p.id === row.packageId);
+        return pkg ? pkg.name : "Unknown";
+      }
     },
     {
       header: "Departure",
@@ -175,13 +192,9 @@ const Shipments = () => {
                 Manage and track all coal shipments
               </p>
             </div>
-            {/* {user?.role === "admin" ? ( */}
-              <Button onClick={handleAddShipment}>
-                <Plus className="mr-2 h-4 w-4" /> Add Shipment
-              </Button>
-            {/* ) : (
-              <div></div>
-            )} */}
+            <Button onClick={handleAddShipment}>
+              <Plus className="mr-2 h-4 w-4" /> Add Shipment
+            </Button>
           </div>
 
           <Card>
@@ -220,6 +233,33 @@ const Shipments = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Package Selection - Moved to the top */}
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="packageId">Assign to Package</Label>
+                    <div className="relative">
+                      <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Select
+                        value={formData.packageId}
+                        onValueChange={(value) => handleSelectChange("packageId", value)}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select a package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {packages.map((pkg) => (
+                            <SelectItem key={pkg.id} value={pkg.id}>
+                              {pkg.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Selecting a package will filter available routes
+                    </p>
+                  </div>
+
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="routeId">Route (Optional)</Label>
                     <Select
@@ -232,11 +272,16 @@ const Shipments = () => {
                         <SelectValue placeholder="Select a predefined route" />
                       </SelectTrigger>
                       <SelectContent>
-                        {routes.map((route) => (
+                        {filteredRoutes.map((route) => (
                           <SelectItem key={route.id} value={route.id}>
                             {route.source} to {route.destination}
                           </SelectItem>
                         ))}
+                        {filteredRoutes.length === 0 && formData.packageId !== 'none' && (
+                          <div className="px-2 py-4 text-sm text-center text-muted-foreground">
+                            No routes found for this package
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
@@ -254,7 +299,7 @@ const Shipments = () => {
                         placeholder="Enter source location"
                         className="pl-10"
                         value={formData.source}
-                        // onChange={handleInputChange}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -270,7 +315,7 @@ const Shipments = () => {
                         placeholder="Enter destination location"
                         className="pl-10"
                         value={formData.destination}
-                        // onChange={handleInputChange}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>

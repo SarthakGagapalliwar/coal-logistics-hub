@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -22,11 +21,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Edit, Trash, MapPin, FileText, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash, MapPin, FileText, DollarSign, Package } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoutes } from "@/hooks/use-routes";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
+import { usePackages } from "@/hooks/use-packages";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const RoutesPage = () => {
   const {
@@ -37,6 +44,7 @@ const RoutesPage = () => {
     selectedRoute,
     formData,
     handleInputChange,
+    handleSelectChange,
     handleEditRoute,
     handleAddRoute,
     handleSubmit,
@@ -45,8 +53,8 @@ const RoutesPage = () => {
     isDeleting,
   } = useRoutes();
 
+  const { packages } = usePackages();
   const isMobile = useIsMobile();
-
   const { user } = useAuth();
 
   // Columns for the data table
@@ -75,6 +83,15 @@ const RoutesPage = () => {
       header: "Vendor Rate (₹/ton)",
       accessorKey: "vendorRatePerTon",
     },
+    {
+      header: "Associated Package",
+      accessorKey: "assignedPackageId",
+      cell: (row: any) => {
+        if (!row.assignedPackageId) return "None";
+        const pkg = packages.find(p => p.id === row.assignedPackageId);
+        return pkg ? pkg.name : "Unknown";
+      }
+    }
   ];
 
   if (user?.role === "admin") {
@@ -254,6 +271,29 @@ const RoutesPage = () => {
                         onChange={handleInputChange}
                         required
                       />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="assignedPackageId">Assign to Package (Optional)</Label>
+                    <div className="relative">
+                      <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Select
+                        value={formData.assignedPackageId}
+                        onValueChange={(value) => handleSelectChange("assignedPackageId", value)}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select a package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {packages.map((pkg) => (
+                            <SelectItem key={pkg.id} value={pkg.id}>
+                              {pkg.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

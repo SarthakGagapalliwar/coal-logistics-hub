@@ -72,9 +72,9 @@ const Navbar: React.FC = () => {
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
     { to: '/vehicles', icon: <Truck size={20} />, label: 'Vehicles' },
+    { to: '/packages', icon: <Box size={20} />, label: 'Packages' },
     { to: '/routes', icon: <Route size={20} />, label: 'Routes' },
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
-    { to: '/packages', icon: <Box size={20} />, label: 'Packages' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
     { to: '/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];

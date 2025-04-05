@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, DbRoute, handleSupabaseError } from '@/lib/supabase';
+import { supabase, DbRoute } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { fetchPackages } from './use-packages';
 
 // Type for our app's route format
 export interface Route {
@@ -13,6 +14,7 @@ export interface Route {
   billingRatePerTon: number;
   vendorRatePerTon: number;
   estimatedTime: number;
+  assignedPackageId?: string;
 }
 
 // Convert DB format to app format
@@ -20,10 +22,11 @@ const dbToAppRoute = (dbRoute: DbRoute): Route => ({
   id: dbRoute.id,
   source: dbRoute.source,
   destination: dbRoute.destination,
-  distanceKm: dbRoute.distance_km,
-  billingRatePerTon: dbRoute.billing_rate_per_ton,
-  vendorRatePerTon: dbRoute.vendor_rate_per_ton,
-  estimatedTime: dbRoute.estimated_time,
+  distanceKm: Number(dbRoute.distance_km),
+  billingRatePerTon: Number(dbRoute.billing_rate_per_ton),
+  vendorRatePerTon: Number(dbRoute.vendor_rate_per_ton),
+  estimatedTime: Number(dbRoute.estimated_time),
+  assignedPackageId: dbRoute.assigned_package_id,
 });
 
 // Convert app format to DB format
@@ -33,8 +36,23 @@ const appToDbRoute = (route: Partial<Route>) => ({
   distance_km: route.distanceKm,
   billing_rate_per_ton: route.billingRatePerTon,
   vendor_rate_per_ton: route.vendorRatePerTon,
-  estimated_time: route.estimatedTime,
+  estimated_time: route.estimatedTime || 0,
+  assigned_package_id: route.assignedPackageId && route.assignedPackageId !== "none" ? route.assignedPackageId : null,
 });
+
+// Isolate the data fetching function
+export const fetchRoutes = async () => {
+  const { data, error } = await supabase
+    .from('routes')
+    .select('*')
+    .order('source');
+  
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return (data as DbRoute[]).map(dbToAppRoute);
+};
 
 export const useRoutes = () => {
   const queryClient = useQueryClient();
@@ -48,6 +66,7 @@ export const useRoutes = () => {
     billingRatePerTon: '',
     vendorRatePerTon: '',
     estimatedTime: '',
+    assignedPackageId: 'none',
   });
 
   // Query to fetch routes
@@ -57,18 +76,13 @@ export const useRoutes = () => {
     error 
   } = useQuery({
     queryKey: ['routes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('routes')
-        .select('*')
-        .order('source');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return (data as DbRoute[]).map(dbToAppRoute);
-    }
+    queryFn: fetchRoutes
+  });
+  
+  // Query to fetch packages for assignment
+  const { data: packages = [] } = useQuery({
+    queryKey: ['packagesForRoutes'],
+    queryFn: fetchPackages
   });
 
   // Mutation to add a new route
@@ -158,6 +172,11 @@ export const useRoutes = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle select changes
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   // Set up to edit a route
   const handleEditRoute = (route: Route) => {
     setSelectedRoute(route);
@@ -168,6 +187,7 @@ export const useRoutes = () => {
       billingRatePerTon: route.billingRatePerTon.toString(),
       vendorRatePerTon: route.vendorRatePerTon.toString(),
       estimatedTime: route.estimatedTime.toString(),
+      assignedPackageId: route.assignedPackageId || 'none',
     });
     setOpenDialog(true);
   };
@@ -188,6 +208,7 @@ export const useRoutes = () => {
       billingRatePerTon: '',
       vendorRatePerTon: '',
       estimatedTime: '',
+      assignedPackageId: 'none',
     });
   };
 
@@ -201,7 +222,8 @@ export const useRoutes = () => {
       distanceKm: Number(formData.distanceKm),
       billingRatePerTon: Number(formData.billingRatePerTon),
       vendorRatePerTon: Number(formData.vendorRatePerTon),
-      estimatedTime: Number(formData.estimatedTime),
+      estimatedTime: Number(formData.estimatedTime || '0'),
+      assignedPackageId: formData.assignedPackageId === 'none' ? undefined : formData.assignedPackageId,
     };
     
     if (selectedRoute) {
@@ -230,6 +252,7 @@ export const useRoutes = () => {
     selectedRoute,
     formData,
     handleInputChange,
+    handleSelectChange,
     handleEditRoute,
     handleAddRoute,
     handleSubmit,

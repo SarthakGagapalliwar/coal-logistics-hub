@@ -11,65 +11,51 @@ export type Database = {
     Tables: {
       packages: {
         Row: {
-          assigned_user_id: string | null
           billing_rate: number | null
           created_at: string
           created_by_id: string
-          description: string | null
-          dimensions: string | null
           id: string
           name: string
-          route_id: string | null
+          shipment_id: string | null
           status: string
-          tracking_number: string | null
           updated_at: string
           vendor_rate: number | null
-          weight_kg: number
         }
         Insert: {
-          assigned_user_id?: string | null
           billing_rate?: number | null
           created_at?: string
           created_by_id: string
-          description?: string | null
-          dimensions?: string | null
           id?: string
           name: string
-          route_id?: string | null
+          shipment_id?: string | null
           status?: string
-          tracking_number?: string | null
           updated_at?: string
           vendor_rate?: number | null
-          weight_kg: number
         }
         Update: {
-          assigned_user_id?: string | null
           billing_rate?: number | null
           created_at?: string
           created_by_id?: string
-          description?: string | null
-          dimensions?: string | null
           id?: string
           name?: string
-          route_id?: string | null
+          shipment_id?: string | null
           status?: string
-          tracking_number?: string | null
           updated_at?: string
           vendor_rate?: number | null
-          weight_kg?: number
         }
         Relationships: [
           {
-            foreignKeyName: "packages_route_id_fkey"
-            columns: ["route_id"]
+            foreignKeyName: "packages_shipment_id_fkey"
+            columns: ["shipment_id"]
             isOneToOne: false
-            referencedRelation: "routes"
+            referencedRelation: "shipments"
             referencedColumns: ["id"]
           },
         ]
       }
       profiles: {
         Row: {
+          assigned_package_id: string | null
           created_at: string
           full_name: string | null
           id: string
@@ -79,6 +65,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          assigned_package_id?: string | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -88,6 +75,7 @@ export type Database = {
           username: string
         }
         Update: {
+          assigned_package_id?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -96,10 +84,19 @@ export type Database = {
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_assigned_package_id_fkey"
+            columns: ["assigned_package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       routes: {
         Row: {
+          assigned_package_id: string | null
           billing_rate_per_ton: number
           created_at: string
           destination: string
@@ -111,6 +108,7 @@ export type Database = {
           vendor_rate_per_ton: number
         }
         Insert: {
+          assigned_package_id?: string | null
           billing_rate_per_ton: number
           created_at?: string
           destination: string
@@ -122,6 +120,7 @@ export type Database = {
           vendor_rate_per_ton: number
         }
         Update: {
+          assigned_package_id?: string | null
           billing_rate_per_ton?: number
           created_at?: string
           destination?: string
@@ -132,7 +131,15 @@ export type Database = {
           updated_at?: string
           vendor_rate_per_ton?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "routes_assigned_package_id_fkey"
+            columns: ["assigned_package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipments: {
         Row: {
@@ -141,6 +148,7 @@ export type Database = {
           departure_time: string
           destination: string
           id: string
+          package_id: string | null
           quantity_tons: number
           remarks: string | null
           route_id: string | null
@@ -156,6 +164,7 @@ export type Database = {
           departure_time: string
           destination: string
           id?: string
+          package_id?: string | null
           quantity_tons: number
           remarks?: string | null
           route_id?: string | null
@@ -171,6 +180,7 @@ export type Database = {
           departure_time?: string
           destination?: string
           id?: string
+          package_id?: string | null
           quantity_tons?: number
           remarks?: string | null
           route_id?: string | null
@@ -181,6 +191,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shipments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shipments_route_id_fkey"
             columns: ["route_id"]
@@ -234,6 +251,21 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          role: string
+          user_id: string
+        }
+        Insert: {
+          role: string
+          user_id: string
+        }
+        Update: {
+          role?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -313,7 +345,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_roles_view: {
+        Row: {
+          id: string | null
+          role: string | null
+        }
+        Insert: {
+          id?: string | null
+          role?: string | null
+        }
+        Update: {
+          id?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

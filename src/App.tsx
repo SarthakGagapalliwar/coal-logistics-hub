@@ -82,6 +82,11 @@ const AppRoutes = () => {
           <Vehicles />
         </ProtectedRoute>
       } />
+      <Route path="/packages" element={
+        <ProtectedRoute>
+          <Packages />
+        </ProtectedRoute>
+      } />
       <Route path="/routes" element={
         <ProtectedRoute>
           <RoutesPage />
@@ -90,11 +95,6 @@ const AppRoutes = () => {
       <Route path="/shipments" element={
         <ProtectedRoute>
           <Shipments />
-        </ProtectedRoute>
-      } />
-      <Route path="/packages" element={
-        <ProtectedRoute>
-          <Packages />
         </ProtectedRoute>
       } />
       <Route path="/reports" element={

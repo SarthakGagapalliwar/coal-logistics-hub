@@ -9,16 +9,9 @@ import { useAuth } from '@/context/AuthContext';
 interface DbPackage {
   id: string;
   name: string;
-  description: string | null;
-  weight_kg: number;
-  dimensions: string | null;
-  status: string;
-  route_id: string | null;
-  assigned_user_id: string | null;
   created_by_id: string;
   billing_rate: number | null;
   vendor_rate: number | null;
-  tracking_number: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,20 +20,9 @@ interface DbPackage {
 export interface Package {
   id: string;
   name: string;
-  description: string | null;
-  weightKg: number;
-  dimensions: string | null;
-  status: string;
-  routeId: string | null;
-  routeName?: string;
-  source?: string;
-  destination?: string;
-  assignedUserId: string | null;
-  assignedUsername?: string;
   createdById: string;
   billingRate: number | null;
   vendorRate: number | null;
-  trackingNumber: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,16 +31,9 @@ export interface Package {
 const dbToAppPackage = (dbPackage: DbPackage): Package => ({
   id: dbPackage.id,
   name: dbPackage.name,
-  description: dbPackage.description,
-  weightKg: dbPackage.weight_kg,
-  dimensions: dbPackage.dimensions,
-  status: dbPackage.status,
-  routeId: dbPackage.route_id,
-  assignedUserId: dbPackage.assigned_user_id,
   createdById: dbPackage.created_by_id,
   billingRate: dbPackage.billing_rate,
   vendorRate: dbPackage.vendor_rate,
-  trackingNumber: dbPackage.tracking_number,
   createdAt: dbPackage.created_at,
   updatedAt: dbPackage.updated_at,
 });
@@ -66,16 +41,25 @@ const dbToAppPackage = (dbPackage: DbPackage): Package => ({
 // Convert app format to DB format
 const appToDbPackage = (pkg: Partial<Package>) => ({
   name: pkg.name,
-  description: pkg.description,
-  weight_kg: pkg.weightKg,
-  dimensions: pkg.dimensions,
-  status: pkg.status,
-  route_id: pkg.routeId,
-  assigned_user_id: pkg.assignedUserId,
   billing_rate: pkg.billingRate,
   vendor_rate: pkg.vendorRate,
-  tracking_number: pkg.trackingNumber,
 });
+
+// Isolate the data fetching function
+export const fetchPackages = async () => {
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('packages')
+    .select('*');
+  
+  if (error) {
+    console.error('Error fetching packages:', error);
+    throw new Error(error.message);
+  }
+  
+  return (data as DbPackage[]).map(dbToAppPackage);
+};
 
 export const usePackages = () => {
   const queryClient = useQueryClient();
@@ -85,7 +69,7 @@ export const usePackages = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
-  // Fetch all users for admin assignment
+  // Query to fetch all users for admin assignment
   const { data: allUsers = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
@@ -119,101 +103,7 @@ export const usePackages = () => {
     refetch
   } = useQuery({
     queryKey: ['packages'],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      console.log("Fetching packages");
-      
-      // Step 1: Get packages with route information
-      let query = supabase
-        .from('packages')
-        .select(`*`);
-      
-      // If not admin, only fetch packages for this user
-      if (!isAdmin) {
-        query = query.or(`assigned_user_id.eq.${user.id},created_by_id.eq.${user.id}`);
-      }
-      
-      const { data: packagesData, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching packages:', error);
-        throw new Error(error.message);
-      }
-      
-      console.log("Packages fetched:", packagesData);
-      
-      // Step 2: Fetch route information separately
-      const routeIds = packagesData
-        .map((pkg: any) => pkg.route_id)
-        .filter((id: string | null) => id !== null);
-        
-      let routesData = [];
-      if (routeIds.length > 0) {
-        const { data: routes, error: routesError } = await supabase
-          .from('routes')
-          .select('id, source, destination')
-          .in('id', routeIds);
-          
-        if (routesError) {
-          console.error('Error fetching routes:', routesError);
-        } else {
-          routesData = routes || [];
-          console.log("Routes fetched:", routesData);
-        }
-      }
-      
-      // Step 3: Fetch user information separately
-      const userIds = packagesData
-        .map((pkg: any) => pkg.assigned_user_id)
-        .filter((id: string | null) => id !== null);
-        
-      let usersData = [];
-      if (userIds.length > 0) {
-        const { data: users, error: usersError } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .in('id', userIds);
-          
-        if (usersError) {
-          console.error('Error fetching users:', usersError);
-        } else {
-          usersData = users || [];
-          console.log("Users fetched for packages:", usersData);
-        }
-      }
-      
-      // Create maps for quick lookups
-      const routeMap = routesData.reduce((map: Record<string, any>, route: any) => {
-        map[route.id] = route;
-        return map;
-      }, {});
-      
-      const userMap = usersData.reduce((map: Record<string, string>, user: any) => {
-        map[user.id] = user.username;
-        return map;
-      }, {});
-      
-      // Combine all data
-      return packagesData.map((item: any): Package => {
-        const pkg = dbToAppPackage(item as DbPackage);
-        
-        // Add route info
-        if (pkg.routeId && routeMap[pkg.routeId]) {
-          const route = routeMap[pkg.routeId];
-          pkg.routeName = `${route.source} to ${route.destination}`;
-          pkg.source = route.source;
-          pkg.destination = route.destination;
-        }
-        
-        // Add user info
-        if (pkg.assignedUserId && userMap[pkg.assignedUserId]) {
-          pkg.assignedUsername = userMap[pkg.assignedUserId];
-        }
-        
-        return pkg;
-      });
-    },
+    queryFn: fetchPackages,
     enabled: !!user
   });
 

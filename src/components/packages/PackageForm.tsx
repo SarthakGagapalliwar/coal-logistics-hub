@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
 import { usePackages } from '@/hooks/use-packages';
-import { useRoutes } from '@/hooks/use-routes';
 
 import {
   Form,
@@ -15,28 +15,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
 
 const packageSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  description: z.string().optional(),
-  weightKg: z.coerce.number().positive({ message: "Weight must be positive." }),
-  dimensions: z.string().optional(),
-  status: z.string(),
-  routeId: z.string().optional().nullable(),
-  assignedUserId: z.string().optional().nullable(),
-  trackingNumber: z.string().optional(),
-  vendorRate: z.coerce.number().optional().nullable(),
   billingRate: z.coerce.number().optional().nullable(),
+  vendorRate: z.coerce.number().optional().nullable(),
 });
 
 type PackageFormValues = z.infer<typeof packageSchema>;
@@ -44,27 +29,16 @@ type PackageFormValues = z.infer<typeof packageSchema>;
 const PackageForm = () => {
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const { selectedPackage, addPackageMutation, updatePackageMutation, allUsers, isLoadingUsers } = usePackages();
-  const { routes } = useRoutes();
-  const [routeRates, setRouteRates] = useState<{ billing: number | null, vendor: number | null }>({ billing: null, vendor: null });
-
-  console.log("Current user:", user);
-  console.log("Is admin:", isAdmin);
-  console.log("All users data:", allUsers);
-  console.log("All users length:", allUsers?.length);
-  console.log("Is loading users:", isLoadingUsers);
+  const { 
+    selectedPackage, 
+    addPackageMutation, 
+    updatePackageMutation,
+  } = usePackages();
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageSchema),
     defaultValues: {
       name: '',
-      description: '',
-      weightKg: 0,
-      dimensions: '',
-      status: 'pending',
-      routeId: null,
-      assignedUserId: null,
-      trackingNumber: '',
       vendorRate: null,
       billingRate: null,
     },
@@ -74,56 +48,15 @@ const PackageForm = () => {
     if (selectedPackage) {
       form.reset({
         name: selectedPackage.name,
-        description: selectedPackage.description || '',
-        weightKg: selectedPackage.weightKg,
-        dimensions: selectedPackage.dimensions || '',
-        status: selectedPackage.status,
-        routeId: selectedPackage.routeId || null,
-        assignedUserId: selectedPackage.assignedUserId || null,
-        trackingNumber: selectedPackage.trackingNumber || '',
         vendorRate: selectedPackage.vendorRate || null,
         billingRate: selectedPackage.billingRate || null,
       });
-      
-      if (selectedPackage.routeId) {
-        const selectedRoute = routes.find(r => r.id === selectedPackage.routeId);
-        if (selectedRoute) {
-          setRouteRates({
-            billing: selectedRoute.billingRatePerTon,
-            vendor: selectedRoute.vendorRatePerTon,
-          });
-        }
-      }
     }
-  }, [selectedPackage, routes, form]);
-
-  const handleRouteChange = (routeId: string) => {
-    const selectedRoute = routes.find(r => r.id === routeId);
-    if (selectedRoute) {
-      setRouteRates({
-        billing: selectedRoute.billingRatePerTon,
-        vendor: selectedRoute.vendorRatePerTon,
-      });
-      
-      form.setValue('vendorRate', selectedRoute.vendorRatePerTon);
-      form.setValue('billingRate', selectedRoute.billingRatePerTon);
-    } else {
-      setRouteRates({ billing: null, vendor: null });
-      form.setValue('vendorRate', null);
-      form.setValue('billingRate', null);
-    }
-  };
+  }, [selectedPackage, form]);
 
   const onSubmit = (values: PackageFormValues) => {
     const packageData = {
       name: values.name,
-      description: values.description,
-      weightKg: values.weightKg,
-      dimensions: values.dimensions,
-      status: values.status,
-      routeId: values.routeId,
-      assignedUserId: values.assignedUserId,
-      trackingNumber: values.trackingNumber,
       vendorRate: values.vendorRate,
       billingRate: values.billingRate,
     };
@@ -140,13 +73,6 @@ const PackageForm = () => {
 
   const isSubmitting = addPackageMutation.isPending || updatePackageMutation.isPending;
 
-  const generateTrackingNumber = () => {
-    const prefix = 'PKG';
-    const randomPart = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-    const trackingNumber = `${prefix}${randomPart}`;
-    form.setValue('trackingNumber', trackingNumber);
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -154,7 +80,7 @@ const PackageForm = () => {
           {selectedPackage ? 'Edit Package' : 'Add New Package'}
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <FormField
             control={form.control}
             name="name"
@@ -168,176 +94,6 @@ const PackageForm = () => {
               </FormItem>
             )}
           />
-          
-          <FormField
-            control={form.control}
-            name="trackingNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tracking Number</FormLabel>
-                <div className="flex gap-2">
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={generateTrackingNumber}
-                  >
-                    Generate
-                  </Button>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="weightKg"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Weight (kg)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.01" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="dimensions"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Dimensions (L×W×H cm)</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., 30×20×10" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select 
-                  value={field.value} 
-                  onValueChange={field.onChange}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in transit">In Transit</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="routeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Route</FormLabel>
-                <Select 
-                  value={field.value || ""} 
-                  onValueChange={(value) => {
-                    field.onChange(value === "none" ? null : value);
-                    if (value !== "none") handleRouteChange(value);
-                  }}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select route" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {routes.map((route) => (
-                      <SelectItem key={route.id} value={route.id}>
-                        {route.source} to {route.destination} ({route.distanceKm} km)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          {isAdmin && (
-            <FormField
-              control={form.control}
-              name="assignedUserId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assign User</FormLabel>
-                  <Select 
-                    value={field.value || ""} 
-                    onValueChange={(value) => field.onChange(value === "none" ? null : value)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Assign to user" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {isLoadingUsers ? (
-                        <SelectItem value="loading" disabled>Loading users...</SelectItem>
-                      ) : allUsers && allUsers.length > 0 ? (
-                        allUsers.map((user: any) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.username} {user.role === 'admin' ? '(Admin)' : ''}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-users" disabled>No users found</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {allUsers && allUsers.length > 0 ? (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {allUsers.length} user{allUsers.length !== 1 ? 's' : ''} available
-                    </div>
-                  ) : null}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -356,11 +112,6 @@ const PackageForm = () => {
                     onChange={(e) => field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
                   />
                 </FormControl>
-                {routeRates.vendor !== null && (
-                  <p className="text-xs text-muted-foreground">
-                    Route vendor rate: {routeRates.vendor}
-                  </p>
-                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -381,11 +132,6 @@ const PackageForm = () => {
                     onChange={(e) => field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
                   />
                 </FormControl>
-                {routeRates.billing !== null && (
-                  <p className="text-xs text-muted-foreground">
-                    Route billing rate: {routeRates.billing}
-                  </p>
-                )}
                 <FormMessage />
               </FormItem>
             )}
