@@ -153,10 +153,17 @@ export const useShipments = () => {
         
         // If we have source and destination but no route_id, try to find a matching route
         if (!shipmentData.route_id && shipment.source && shipment.destination) {
-          const matchingRoute = routes.find(route => 
-            route.source.toLowerCase() === shipment.source.toLowerCase() && 
-            route.destination.toLowerCase() === shipment.destination.toLowerCase()
-          );
+          // If package is selected, filter routes by package
+          const matchingRoute = shipment.packageId && shipment.packageId !== 'none'
+            ? routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase() &&
+                route.assignedPackageId === shipment.packageId
+              )
+            : routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase()
+              );
           
           if (matchingRoute) {
             shipmentData.route_id = matchingRoute.id;
@@ -211,10 +218,17 @@ export const useShipments = () => {
         
         // If we have source and destination but no route_id, try to find a matching route
         if (!shipmentData.route_id && shipment.source && shipment.destination) {
-          const matchingRoute = routes.find(route => 
-            route.source.toLowerCase() === shipment.source.toLowerCase() && 
-            route.destination.toLowerCase() === shipment.destination.toLowerCase()
-          );
+          // If package is selected, filter routes by package
+          const matchingRoute = shipment.packageId && shipment.packageId !== 'none'
+            ? routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase() &&
+                route.assignedPackageId === shipment.packageId
+              )
+            : routes.find(route => 
+                route.source.toLowerCase() === shipment.source.toLowerCase() && 
+                route.destination.toLowerCase() === shipment.destination.toLowerCase()
+              );
           
           if (matchingRoute) {
             shipmentData.route_id = matchingRoute.id;
@@ -293,12 +307,21 @@ export const useShipments = () => {
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     
+    // If we're selecting a package, clear route selection
+    if (name === 'packageId') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        routeId: '' // Reset route when package changes
+      }));
+    }
     // If we're selecting a route, auto-fill source and destination
-    if (name === 'routeId' && value) {
+    else if (name === 'routeId' && value) {
       const selectedRoute = routes.find(route => route.id === value);
       if (selectedRoute) {
         setFormData(prev => ({
           ...prev,
+          [name]: value,
           source: selectedRoute.source,
           destination: selectedRoute.destination,
         }));

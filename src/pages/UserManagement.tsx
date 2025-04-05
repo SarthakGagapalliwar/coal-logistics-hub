@@ -41,7 +41,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { UserRole } from "@/context/AuthContext";
+import { Edit, Trash } from "lucide-react";
 
 interface User {
   id: string;
@@ -60,11 +71,17 @@ const UserManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     username: "",
     role: "user" as UserRole,
+    assigned_package_id: "" as string | null,
+  });
+  const [editFormData, setEditFormData] = useState({
     assigned_package_id: "" as string | null,
   });
 
@@ -223,6 +240,101 @@ const UserManagement = () => {
     }
   };
 
+  const handleEditUser = (userItem: User) => {
+    setSelectedUser(userItem);
+    setEditFormData({
+      assigned_package_id: userItem.assigned_package_id || null,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteUser = (userItem: User) => {
+    setSelectedUser(userItem);
+    setDeleteDialogOpen(true);
+  };
+
+  const saveUserEdit = async () => {
+    if (!selectedUser) return;
+    
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          assigned_package_id: editFormData.assigned_package_id === "none" ? null : editFormData.assigned_package_id 
+        })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+      
+      toast.success("User updated successfully");
+      
+      // Update the local state
+      const updatedUsers = users.map(u => {
+        if (u.id === selectedUser.id) {
+          return {
+            ...u,
+            assigned_package_id: editFormData.assigned_package_id
+          };
+        }
+        return u;
+      });
+      
+      setUsers(updatedUsers);
+      setEditDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      toast.error(`Failed to update user: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    setIsLoading(true);
+    try {
+      // If user had an assigned package, we need to reassign or clean up
+      if (selectedUser.assigned_package_id) {
+        // Clear package assignment before deleting user
+        const { error: packageError } = await supabase
+          .from('packages')
+          .update({ assigned_package_id: null })
+          .eq('id', selectedUser.assigned_package_id);
+          
+        if (packageError) {
+          console.error("Error clearing package assignment:", packageError);
+        }
+      }
+      
+      // Delete the user from auth schema via RPC function
+      // Note: In a real app, you'd use Supabase admin functions or a secure edge function
+      const { error } = await supabase
+        .rpc('delete_user', { user_id: selectedUser.id });
+
+      if (error) throw error;
+      
+      toast.success("User deleted successfully");
+      
+      // Remove from local state
+      setUsers(users.filter(u => u.id !== selectedUser.id));
+      setDeleteDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error(`Failed to delete user: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPackageChange = (value: string) => {
+    setEditFormData({
+      ...editFormData,
+      assigned_package_id: value === "none" ? null : value,
+    });
+  };
+
   const resetForm = () => {
     setFormData({
       email: "",
@@ -376,12 +488,13 @@ const UserManagement = () => {
                     <TableHead>Assigned Package</TableHead>
                     <TableHead>Created</TableHead>
                     {user?.role === 'admin' && <TableHead>Password</TableHead>}
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={user?.role === 'admin' ? 6 : 5} className="text-center py-6">
+                      <TableCell colSpan={user?.role === 'admin' ? 7 : 6} className="text-center py-6">
                         No users found
                       </TableCell>
                     </TableRow>
@@ -400,6 +513,26 @@ const UserManagement = () => {
                             {userItem.password ? userItem.password : "••••••••"}
                           </TableCell>
                         )}
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleEditUser(userItem)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteUser(userItem)}
+                              disabled={user.id === userItem.id}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -409,6 +542,76 @@ const UserManagement = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update package assignment for {selectedUser?.username}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit_assigned_package">Assign Package</Label>
+              <Select
+                value={editFormData.assigned_package_id || "none"}
+                onValueChange={handleEditPackageChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select package" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {packages.map((pkg) => (
+                    <SelectItem key={pkg.id} value={pkg.id}>{pkg.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveUserEdit} 
+              disabled={isLoading}
+            >
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user 
+              account for {selectedUser?.username} and remove all their data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDeleteUser}
+              disabled={isLoading}
+            >
+              {isLoading ? "Deleting..." : "Delete User"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
