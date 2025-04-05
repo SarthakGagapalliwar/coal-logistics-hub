@@ -1,3 +1,4 @@
+
 import { createClient } from "@supabase/supabase-js";
 
 // These environment variables are automatically injected by the Supabase integration
@@ -223,6 +224,7 @@ export type DbRoute = {
   vendor_rate_per_ton: number;
   estimated_time: number;
   created_at: string;
+  assigned_package_id?: string; // Added this property
 };
 
 export type DbShipment = {
@@ -237,5 +239,5 @@ export type DbShipment = {
   arrival_time: string | null;
   remarks?: string;
   created_at: string;
-  route_id?: string; // Added route_id property
+  route_id?: string;
 };

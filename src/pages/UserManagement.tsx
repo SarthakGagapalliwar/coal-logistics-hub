@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { toast } from "sonner";
@@ -173,28 +172,15 @@ const UserManagement = () => {
       });
       
       // Use the createUser method from AuthContext
-      const { success, userId } = await createUser(
+      const { result } = await createUser(
         formData.email,
         formData.password,
         formData.username,
         formData.role
       );
 
-      if (success && userId && formData.assigned_package_id) {
-        // Update the user's assigned package
-        const { error: profileUpdateError } = await supabase
-          .from('profiles')
-          .update({ assigned_package_id: formData.assigned_package_id })
-          .eq('id', userId);
-          
-        if (profileUpdateError) {
-          console.error("Error assigning package to user:", profileUpdateError);
-          toast.error(`User created but failed to assign package: ${profileUpdateError.message}`);
-        }
-      }
-
-      if (success) {
-        toast.success("User created successfully");
+      if (result) {
+        toast.success(`User created successfully`);
         
         // Add the newly created user to the list with the password for admin view
         const newUser: User = {

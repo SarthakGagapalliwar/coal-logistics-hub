@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbTransporter, handleSupabaseError } from '@/lib/supabase';
@@ -33,6 +32,23 @@ const appToDbTransporter = (transporter: Partial<Transporter>) => ({
   address: transporter.address,
 });
 
+// Isolate the data fetching function to avoid circular dependencies
+export const fetchTransporters = async () => {
+  console.log('Fetching transporters...');
+  const { data, error } = await supabase
+    .from('transporters')
+    .select('*')
+    .order('name');
+  
+  if (error) {
+    console.error('Error fetching transporters:', error);
+    throw new Error(error.message);
+  }
+  
+  console.log('Transporters fetched:', data);
+  return (data as DbTransporter[]).map(dbToAppTransporter);
+};
+
 export const useTransporters = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
@@ -54,21 +70,7 @@ export const useTransporters = () => {
     refetch 
   } = useQuery({
     queryKey: ['transporters'],
-    queryFn: async () => {
-      console.log('Fetching transporters...');
-      const { data, error } = await supabase
-        .from('transporters')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error('Error fetching transporters:', error);
-        throw new Error(error.message);
-      }
-      
-      console.log('Transporters fetched:', data);
-      return (data as DbTransporter[]).map(dbToAppTransporter);
-    }
+    queryFn: fetchTransporters
   });
 
   // Mutation to add a new transporter

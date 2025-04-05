@@ -1,11 +1,9 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, DbRoute, handleSupabaseError } from '@/lib/supabase';
+import { supabase, DbRoute } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { usePackages } from '@/hooks/use-packages';
 
-// Type for route from database
+// Type for our app's route format
 export interface Route {
   id: string;
   source: string;
@@ -14,7 +12,7 @@ export interface Route {
   billingRatePerTon: number;
   vendorRatePerTon: number;
   estimatedTime: number;
-  assignedPackageId?: string | null;
+  assignedPackageId?: string;
 }
 
 // Convert DB format to app format
@@ -22,10 +20,10 @@ const dbToAppRoute = (dbRoute: DbRoute): Route => ({
   id: dbRoute.id,
   source: dbRoute.source,
   destination: dbRoute.destination,
-  distanceKm: dbRoute.distance_km,
-  billingRatePerTon: dbRoute.billing_rate_per_ton,
-  vendorRatePerTon: dbRoute.vendor_rate_per_ton,
-  estimatedTime: dbRoute.estimated_time,
+  distanceKm: Number(dbRoute.distance_km),
+  billingRatePerTon: Number(dbRoute.billing_rate_per_ton),
+  vendorRatePerTon: Number(dbRoute.vendor_rate_per_ton),
+  estimatedTime: Number(dbRoute.estimated_time),
   assignedPackageId: dbRoute.assigned_package_id,
 });
 
@@ -36,14 +34,26 @@ const appToDbRoute = (route: Partial<Route>) => ({
   distance_km: route.distanceKm,
   billing_rate_per_ton: route.billingRatePerTon,
   vendor_rate_per_ton: route.vendorRatePerTon,
-  estimated_time: route.estimatedTime,
+  estimated_time: route.estimatedTime || 0,
   assigned_package_id: route.assignedPackageId,
 });
 
+// Isolate the data fetching function
+export const fetchRoutes = async () => {
+  const { data, error } = await supabase
+    .from('routes')
+    .select('*')
+    .order('source');
+  
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return (data as DbRoute[]).map(dbToAppRoute);
+};
+
 export const useRoutes = () => {
   const queryClient = useQueryClient();
-  const { packages } = usePackages();
-  
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   
@@ -54,7 +64,7 @@ export const useRoutes = () => {
     billingRatePerTon: '',
     vendorRatePerTon: '',
     estimatedTime: '',
-    assignedPackageId: null as string | null,
+    assignedPackageId: '',
   });
 
   // Query to fetch routes
@@ -64,24 +74,7 @@ export const useRoutes = () => {
     error 
   } = useQuery({
     queryKey: ['routes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('routes')
-        .select('*, packages:assigned_package_id(name)')
-        .order('source');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return data.map((item: any) => {
-        const route = dbToAppRoute(item as DbRoute);
-        return {
-          ...route,
-          packageName: item.packages ? item.packages.name : null
-        };
-      });
-    }
+    queryFn: fetchRoutes
   });
 
   // Mutation to add a new route
@@ -172,8 +165,9 @@ export const useRoutes = () => {
   };
 
   // Handle package selection
-  const handlePackageChange = (packageId: string | null) => {
-    setFormData(prev => ({ ...prev, assignedPackageId: packageId }));
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   // Set up to edit a route
@@ -186,7 +180,7 @@ export const useRoutes = () => {
       billingRatePerTon: route.billingRatePerTon.toString(),
       vendorRatePerTon: route.vendorRatePerTon.toString(),
       estimatedTime: route.estimatedTime.toString(),
-      assignedPackageId: route.assignedPackageId || null,
+      assignedPackageId: route.assignedPackageId || '',
     });
     setOpenDialog(true);
   };
@@ -207,7 +201,7 @@ export const useRoutes = () => {
       billingRatePerTon: '',
       vendorRatePerTon: '',
       estimatedTime: '',
-      assignedPackageId: null,
+      assignedPackageId: '',
     });
   };
 
@@ -242,12 +236,6 @@ export const useRoutes = () => {
     deleteRouteMutation.mutate(id);
   };
 
-  // Get package details by ID
-  const getPackageById = (packageId: string | null | undefined) => {
-    if (!packageId) return null;
-    return packages.find(pkg => pkg.id === packageId);
-  };
-
   return {
     routes,
     isLoading,
@@ -257,14 +245,12 @@ export const useRoutes = () => {
     selectedRoute,
     formData,
     handleInputChange,
-    handlePackageChange,
+    handleSelectChange,
     handleEditRoute,
     handleAddRoute,
     handleSubmit,
     handleDeleteRoute,
     isSubmitting: addRouteMutation.isPending || updateRouteMutation.isPending,
     isDeleting: deleteRouteMutation.isPending,
-    packages,
-    getPackageById,
   };
 };

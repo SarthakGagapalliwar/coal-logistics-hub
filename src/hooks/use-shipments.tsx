@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { useTransporters } from './use-transporters';
-import { useVehicles } from './use-vehicles';
-import { useRoutes } from './use-routes';
+import { fetchTransporters } from './use-transporters';
+import { fetchVehicles } from './use-vehicles';
+import { fetchRoutes } from './use-routes';
 
 // Type for our app's shipment format
 export interface Shipment {
@@ -56,14 +56,57 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   route_id: shipment.routeId,
 });
 
+// Isolate the data fetching function
+export const fetchShipments = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('shipments')
+      .select(`
+        *,
+        transporters:transporter_id (name),
+        vehicles:vehicle_id (vehicle_number),
+        routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching shipments:', error);
+      throw new Error(error.message);
+    }
+    
+    return data.map((shipment: any) => ({
+      ...dbToAppShipment(shipment),
+      transporterName: shipment.transporters?.name || 'Unknown',
+      vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
+      billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
+      vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
+    }));
+  } catch (err) {
+    console.error('Error in shipments query:', err);
+    throw err;
+  }
+};
+
 export const useShipments = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   
-  const { transporters } = useTransporters();
-  const { vehicles } = useVehicles();
-  const { routes } = useRoutes();
+  // Use separate queries for related data
+  const { data: transporters = [] } = useQuery({
+    queryKey: ['transporters'],
+    queryFn: fetchTransporters
+  });
+  
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: fetchVehicles
+  });
+  
+  const { data: routes = [] } = useQuery({
+    queryKey: ['routes'],
+    queryFn: fetchRoutes
+  });
   
   const [formData, setFormData] = useState({
     transporterId: '',
@@ -87,35 +130,7 @@ export const useShipments = () => {
     error 
   } = useQuery({
     queryKey: ['shipments'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('shipments')
-          .select(`
-            *,
-            transporters:transporter_id (name),
-            vehicles:vehicle_id (vehicle_number),
-            routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
-          `)
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('Error fetching shipments:', error);
-          throw new Error(error.message);
-        }
-        
-        return data.map((shipment: any) => ({
-          ...dbToAppShipment(shipment),
-          transporterName: shipment.transporters?.name || 'Unknown',
-          vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
-          billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
-          vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
-        }));
-      } catch (err) {
-        console.error('Error in shipments query:', err);
-        throw err;
-      }
-    }
+    queryFn: fetchShipments
   });
 
   // Mutation to add a new shipment

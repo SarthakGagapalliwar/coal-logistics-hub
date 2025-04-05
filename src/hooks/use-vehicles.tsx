@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbVehicle, handleSupabaseError } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { useTransporters } from './use-transporters';
+import { fetchTransporters } from './use-transporters';
 
 // Type for our app's vehicle format
 export interface Vehicle {
@@ -38,12 +37,36 @@ const appToDbVehicle = (vehicle: Partial<Vehicle>) => ({
   last_maintenance: vehicle.lastMaintenance,
 });
 
+// Isolate the data fetching function
+export const fetchVehicles = async () => {
+  const { data, error } = await supabase
+    .from('vehicles')
+    .select(`
+      *,
+      transporters:transporter_id (name)
+    `)
+    .order('vehicle_number');
+  
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data.map((vehicle: any) => ({
+    ...dbToAppVehicle(vehicle),
+    transporterName: vehicle.transporters?.name || 'Unknown',
+  }));
+};
+
 export const useVehicles = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   
-  const { transporters } = useTransporters();
+  // Use separate queries for transporters and vehicles
+  const { data: transporters = [] } = useQuery({
+    queryKey: ['transporters'],
+    queryFn: fetchTransporters
+  });
   
   const [formData, setFormData] = useState({
     transporterId: '',
@@ -61,24 +84,7 @@ export const useVehicles = () => {
     error 
   } = useQuery({
     queryKey: ['vehicles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select(`
-          *,
-          transporters:transporter_id (name)
-        `)
-        .order('vehicle_number');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return data.map((vehicle: any) => ({
-        ...dbToAppVehicle(vehicle),
-        transporterName: vehicle.transporters?.name || 'Unknown',
-      }));
-    }
+    queryFn: fetchVehicles
   });
 
   // Mutation to add a new vehicle
