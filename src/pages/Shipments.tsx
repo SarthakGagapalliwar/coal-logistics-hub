@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -70,7 +69,7 @@ const Shipments = () => {
     routes,
     packages,
   } = useShipments();
-  
+
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
@@ -84,9 +83,10 @@ const Shipments = () => {
   };
 
   // Filter routes based on selected package
-  const filteredRoutes = formData.packageId && formData.packageId !== 'none'
-    ? routes.filter(route => route.assignedPackageId === formData.packageId)
-    : routes;
+  const filteredRoutes =
+    formData.packageId && formData.packageId !== "none"
+      ? routes.filter((route) => route.assignedPackageId === formData.packageId)
+      : routes;
 
   const columns: Column[] = [
     {
@@ -117,21 +117,23 @@ const Shipments = () => {
     {
       header: "Billing Rate",
       accessorKey: "billingRatePerTon",
-      cell: (row: any) => row.billingRatePerTon ? formatCurrency(row.billingRatePerTon) : "N/A",
+      cell: (row: any) =>
+        row.billingRatePerTon ? formatCurrency(row.billingRatePerTon) : "N/A",
     },
     {
       header: "Vendor Rate",
       accessorKey: "vendorRatePerTon",
-      cell: (row: any) => row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
+      cell: (row: any) =>
+        row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
     },
     {
       header: "Associated Package",
       accessorKey: "packageId",
       cell: (row: any) => {
         if (!row.packageId) return "None";
-        const pkg = packages.find(p => p.id === row.packageId);
+        const pkg = packages.find((p) => p.id === row.packageId);
         return pkg ? pkg.name : "Unknown";
-      }
+      },
     },
     {
       header: "Departure",
@@ -240,7 +242,9 @@ const Shipments = () => {
                       <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Select
                         value={formData.packageId}
-                        onValueChange={(value) => handleSelectChange("packageId", value)}
+                        onValueChange={(value) =>
+                          handleSelectChange("packageId", value)
+                        }
                       >
                         <SelectTrigger className="pl-10">
                           <SelectValue placeholder="Select a package" />
@@ -261,7 +265,7 @@ const Shipments = () => {
                   </div>
 
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="routeId">Route (Optional)</Label>
+                    <Label htmlFor="routeId">Route</Label>
                     <Select
                       value={formData.routeId}
                       onValueChange={(value) =>
@@ -277,11 +281,12 @@ const Shipments = () => {
                             {route.source} to {route.destination}
                           </SelectItem>
                         ))}
-                        {filteredRoutes.length === 0 && formData.packageId !== 'none' && (
-                          <div className="px-2 py-4 text-sm text-center text-muted-foreground">
-                            No routes found for this package
-                          </div>
-                        )}
+                        {filteredRoutes.length === 0 &&
+                          formData.packageId !== "none" && (
+                            <div className="px-2 py-4 text-sm text-center text-muted-foreground">
+                              No routes found for this package
+                            </div>
+                          )}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">

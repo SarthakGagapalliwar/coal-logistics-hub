@@ -21,7 +21,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Edit, Trash, MapPin, FileText, DollarSign, Package } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash,
+  MapPin,
+  FileText,
+  DollarSign,
+  Package,
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoutes } from "@/hooks/use-routes";
 import { useAuth } from "@/context/AuthContext";
@@ -88,10 +96,10 @@ const RoutesPage = () => {
       accessorKey: "assignedPackageId",
       cell: (row: any) => {
         if (!row.assignedPackageId) return "None";
-        const pkg = packages.find(p => p.id === row.assignedPackageId);
+        const pkg = packages.find((p) => p.id === row.assignedPackageId);
         return pkg ? pkg.name : "Unknown";
-      }
-    }
+      },
+    },
   ];
 
   if (user?.role === "admin") {
@@ -273,14 +281,16 @@ const RoutesPage = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="assignedPackageId">Assign to Package (Optional)</Label>
+                    <Label htmlFor="assignedPackageId">Assign to Package</Label>
                     <div className="relative">
                       <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Select
                         value={formData.assignedPackageId}
-                        onValueChange={(value) => handleSelectChange("assignedPackageId", value)}
+                        onValueChange={(value) =>
+                          handleSelectChange("assignedPackageId", value)
+                        }
                       >
                         <SelectTrigger className="pl-10">
                           <SelectValue placeholder="Select a package" />
