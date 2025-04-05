@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { toast } from "sonner";
@@ -172,7 +173,7 @@ const UserManagement = () => {
       });
       
       // Use the createUser method from AuthContext
-      const { result } = await createUser(
+      const result = await createUser(
         formData.email,
         formData.password,
         formData.username,
@@ -374,13 +375,13 @@ const UserManagement = () => {
                     <TableHead>Role</TableHead>
                     <TableHead>Assigned Package</TableHead>
                     <TableHead>Created</TableHead>
-                    {user.role === 'admin' && <TableHead>Password</TableHead>}
+                    {user?.role === 'admin' && <TableHead>Password</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={user.role === 'admin' ? 6 : 5} className="text-center py-6">
+                      <TableCell colSpan={user?.role === 'admin' ? 6 : 5} className="text-center py-6">
                         No users found
                       </TableCell>
                     </TableRow>
@@ -394,7 +395,7 @@ const UserManagement = () => {
                         <TableCell>
                           {new Date(userItem.created_at).toLocaleDateString()}
                         </TableCell>
-                        {user.role === 'admin' && (
+                        {user?.role === 'admin' && (
                           <TableCell>
                             {userItem.password ? userItem.password : "••••••••"}
                           </TableCell>
