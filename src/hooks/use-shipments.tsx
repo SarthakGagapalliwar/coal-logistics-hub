@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -5,6 +6,7 @@ import { toast } from 'sonner';
 import { fetchTransporters } from './use-transporters';
 import { fetchVehicles } from './use-vehicles';
 import { fetchRoutes } from './use-routes';
+import { fetchPackages } from './use-packages';
 
 // Type for our app's shipment format
 export interface Shipment {
@@ -21,6 +23,7 @@ export interface Shipment {
   arrivalTime: string | null;
   remarks?: string;
   routeId?: string;
+  packageId?: string;
   billingRatePerTon?: number;
   vendorRatePerTon?: number;
   created_at?: string;
@@ -39,6 +42,7 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   arrivalTime: dbShipment.arrival_time,
   remarks: dbShipment.remarks,
   routeId: dbShipment.route_id,
+  packageId: dbShipment.package_id,
   created_at: dbShipment.created_at,
 });
 
@@ -54,6 +58,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
   route_id: shipment.routeId,
+  package_id: shipment.packageId,
 });
 
 // Isolate the data fetching function
@@ -108,6 +113,11 @@ export const useShipments = () => {
     queryFn: fetchRoutes
   });
   
+  const { data: packages = [] } = useQuery({
+    queryKey: ['packagesForShipments'],
+    queryFn: fetchPackages
+  });
+  
   const [formData, setFormData] = useState({
     transporterId: '',
     vehicleId: '',
@@ -119,6 +129,7 @@ export const useShipments = () => {
     arrivalTime: '',
     remarks: '',
     routeId: '',
+    packageId: '',
     billingRatePerTon: null,
     vendorRatePerTon: null,
   });
@@ -281,7 +292,7 @@ export const useShipments = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
     
     // If we're selecting a route, auto-fill source and destination
-    if (name === 'routeId') {
+    if (name === 'routeId' && value) {
       const selectedRoute = routes.find(route => route.id === value);
       if (selectedRoute) {
         setFormData(prev => ({
@@ -307,6 +318,7 @@ export const useShipments = () => {
       arrivalTime: shipment.arrivalTime || '',
       remarks: shipment.remarks || '',
       routeId: shipment.routeId || '',
+      packageId: shipment.packageId || '',
       billingRatePerTon: shipment.billingRatePerTon || null,
       vendorRatePerTon: shipment.vendorRatePerTon || null,
     });
@@ -333,6 +345,7 @@ export const useShipments = () => {
       arrivalTime: '',
       remarks: '',
       routeId: '',
+      packageId: '',
       billingRatePerTon: null,
       vendorRatePerTon: null,
     });
@@ -353,6 +366,7 @@ export const useShipments = () => {
       arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
       routeId: formData.routeId || undefined,
+      packageId: formData.packageId || undefined,
       billingRatePerTon: formData.billingRatePerTon,
       vendorRatePerTon: formData.vendorRatePerTon,
     };

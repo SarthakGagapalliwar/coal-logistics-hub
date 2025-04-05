@@ -16,21 +16,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
 
 const packageSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  status: z.string(),
   billingRate: z.coerce.number().optional().nullable(),
   vendorRate: z.coerce.number().optional().nullable(),
-  shipmentId: z.string().optional().nullable()
 });
 
 type PackageFormValues = z.infer<typeof packageSchema>;
@@ -42,15 +33,12 @@ const PackageForm = () => {
     selectedPackage, 
     addPackageMutation, 
     updatePackageMutation,
-    allShipments
   } = usePackages();
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageSchema),
     defaultValues: {
       name: '',
-      status: 'pending',
-      shipmentId: null,
       vendorRate: null,
       billingRate: null,
     },
@@ -60,8 +48,6 @@ const PackageForm = () => {
     if (selectedPackage) {
       form.reset({
         name: selectedPackage.name,
-        status: selectedPackage.status,
-        shipmentId: selectedPackage.shipmentId || null,
         vendorRate: selectedPackage.vendorRate || null,
         billingRate: selectedPackage.billingRate || null,
       });
@@ -71,8 +57,6 @@ const PackageForm = () => {
   const onSubmit = (values: PackageFormValues) => {
     const packageData = {
       name: values.name,
-      status: values.status,
-      shipmentId: values.shipmentId,
       vendorRate: values.vendorRate,
       billingRate: values.billingRate,
     };
@@ -106,64 +90,6 @@ const PackageForm = () => {
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select 
-                  value={field.value} 
-                  onValueChange={field.onChange}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in transit">In Transit</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="shipmentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Associated Shipment</FormLabel>
-                <Select 
-                  value={field.value || ""} 
-                  onValueChange={(value) => field.onChange(value === "none" ? null : value)}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select shipment" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {allShipments && allShipments.map((shipment) => (
-                      <SelectItem key={shipment.id} value={shipment.id}>
-                        {shipment.source} to {shipment.destination}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}

@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import DataTable from "@/components/ui-custom/DataTable";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/context/AuthContext';
 import { usePackages } from "@/hooks/use-packages";
 import PackageForm from "@/components/packages/PackageForm";
@@ -48,20 +47,6 @@ const Packages = () => {
 
   const columns = [
     { header: "Name", accessorKey: "name" },
-    { header: "Status", accessorKey: "status", cell: (row: any) => (
-      <Badge variant={getStatusVariant(row.status)}>{row.status}</Badge>
-    )},
-    { 
-      header: "Associated Shipment", 
-      accessorKey: "shipmentSource",
-      cell: (row: any) => (
-        <span>
-          {row.shipmentSource && row.shipmentDestination 
-            ? `${row.shipmentSource} to ${row.shipmentDestination}` 
-            : '-'}
-        </span>
-      )
-    },
     { header: "Vendor Rate", accessorKey: "vendorRate" },
     { header: "Billing Rate", accessorKey: "billingRate" },
     {
@@ -89,21 +74,6 @@ const Packages = () => {
       ),
     },
   ];
-
-  const getStatusVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'outline';
-      case 'in transit':
-        return 'default';
-      case 'delivered':
-        return 'success' as const;
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
 
   const getTitle = () => {
     if (isAdmin) {

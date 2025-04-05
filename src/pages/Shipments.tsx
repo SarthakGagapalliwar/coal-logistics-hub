@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -36,6 +37,7 @@ import {
   Truck,
   Weight,
   Calendar,
+  Package,
 } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,6 +46,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
 import { formatCurrency } from "@/lib/data";
+import { usePackages } from "@/hooks/use-packages";
 
 const Shipments = () => {
   const {
@@ -66,9 +69,9 @@ const Shipments = () => {
     vehicles,
     routes,
   } = useShipments();
-
+  
+  const { packages } = usePackages();
   const isMobile = useIsMobile();
-
   const { user } = useAuth();
 
   const formatDate = (dateString: string | null) => {
@@ -115,6 +118,15 @@ const Shipments = () => {
       header: "Vendor Rate",
       accessorKey: "vendorRatePerTon",
       cell: (row: any) => row.vendorRatePerTon ? formatCurrency(row.vendorRatePerTon) : "N/A",
+    },
+    {
+      header: "Associated Package",
+      accessorKey: "packageId",
+      cell: (row: any) => {
+        if (!row.packageId) return "None";
+        const pkg = packages.find(p => p.id === row.packageId);
+        return pkg ? pkg.name : "Unknown";
+      }
     },
     {
       header: "Departure",
@@ -175,13 +187,9 @@ const Shipments = () => {
                 Manage and track all coal shipments
               </p>
             </div>
-            {/* {user?.role === "admin" ? ( */}
-              <Button onClick={handleAddShipment}>
-                <Plus className="mr-2 h-4 w-4" /> Add Shipment
-              </Button>
-            {/* ) : (
-              <div></div>
-            )} */}
+            <Button onClick={handleAddShipment}>
+              <Plus className="mr-2 h-4 w-4" /> Add Shipment
+            </Button>
           </div>
 
           <Card>
@@ -254,7 +262,7 @@ const Shipments = () => {
                         placeholder="Enter source location"
                         className="pl-10"
                         value={formData.source}
-                        // onChange={handleInputChange}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -270,9 +278,32 @@ const Shipments = () => {
                         placeholder="Enter destination location"
                         className="pl-10"
                         value={formData.destination}
-                        // onChange={handleInputChange}
+                        onChange={handleInputChange}
                         required
                       />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="packageId">Assign to Package (Optional)</Label>
+                    <div className="relative">
+                      <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Select
+                        value={formData.packageId}
+                        onValueChange={(value) => handleSelectChange("packageId", value)}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select a package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {packages.map((pkg) => (
+                            <SelectItem key={pkg.id} value={pkg.id}>
+                              {pkg.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 

@@ -4,32 +4,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { useShipments } from '@/hooks/use-shipments';
 
 // Type for package from database
 interface DbPackage {
   id: string;
   name: string;
-  status: string;
   created_by_id: string;
   billing_rate: number | null;
   vendor_rate: number | null;
   created_at: string;
   updated_at: string;
-  shipment_id: string | null;
 }
 
 // Type for package in application
 export interface Package {
   id: string;
   name: string;
-  status: string;
   createdById: string;
   billingRate: number | null;
   vendorRate: number | null;
-  shipmentId: string | null;
-  shipmentSource?: string;
-  shipmentDestination?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,11 +31,9 @@ export interface Package {
 const dbToAppPackage = (dbPackage: DbPackage): Package => ({
   id: dbPackage.id,
   name: dbPackage.name,
-  status: dbPackage.status,
   createdById: dbPackage.created_by_id,
   billingRate: dbPackage.billing_rate,
   vendorRate: dbPackage.vendor_rate,
-  shipmentId: dbPackage.shipment_id,
   createdAt: dbPackage.created_at,
   updatedAt: dbPackage.updated_at,
 });
@@ -50,17 +41,30 @@ const dbToAppPackage = (dbPackage: DbPackage): Package => ({
 // Convert app format to DB format
 const appToDbPackage = (pkg: Partial<Package>) => ({
   name: pkg.name,
-  status: pkg.status,
   billing_rate: pkg.billingRate,
   vendor_rate: pkg.vendorRate,
-  shipment_id: pkg.shipmentId,
 });
+
+// Isolate the data fetching function
+export const fetchPackages = async () => {
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('packages')
+    .select('*');
+  
+  if (error) {
+    console.error('Error fetching packages:', error);
+    throw new Error(error.message);
+  }
+  
+  return (data as DbPackage[]).map(dbToAppPackage);
+};
 
 export const usePackages = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const { shipments } = useShipments();
   
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -91,29 +95,6 @@ export const usePackages = () => {
     enabled: !!user && isAdmin
   });
 
-  // Query to fetch all shipments for package assignment
-  const { data: allShipments = [] } = useQuery({
-    queryKey: ['allShipmentsForPackages'],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      console.log("Fetching all shipments for package assignment");
-      
-      const { data, error } = await supabase
-        .from('shipments')
-        .select('id, source, destination');
-      
-      if (error) {
-        console.error('Error fetching shipments:', error);
-        toast.error(`Failed to fetch shipments: ${error.message}`);
-        return [];
-      }
-      
-      return data || [];
-    },
-    enabled: !!user
-  });
-
   // Query to fetch packages
   const { 
     data: packages = [], 
@@ -122,62 +103,7 @@ export const usePackages = () => {
     refetch
   } = useQuery({
     queryKey: ['packages'],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      console.log("Fetching packages");
-      
-      // Fetch packages with related shipment information
-      let query = supabase
-        .from('packages')
-        .select(`
-          *,
-          shipments:shipment_id (source, destination)
-        `);
-      
-      // If not admin, only fetch packages for this user
-      if (!isAdmin) {
-        // Using profiles.assigned_package_id to determine which packages the user can view
-        const { data: userProfiles, error: profileError } = await supabase
-          .from('profiles')
-          .select('assigned_package_id')
-          .eq('id', user.id);
-        
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError);
-          throw new Error(profileError.message);
-        }
-        
-        if (userProfiles && userProfiles.length > 0 && userProfiles[0].assigned_package_id) {
-          query = query.eq('id', userProfiles[0].assigned_package_id);
-        } else {
-          // If no packages assigned, only show packages created by the user
-          query = query.eq('created_by_id', user.id);
-        }
-      }
-      
-      const { data: packagesData, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching packages:', error);
-        throw new Error(error.message);
-      }
-      
-      console.log("Packages fetched:", packagesData);
-      
-      // Combine all data
-      return packagesData.map((item: any): Package => {
-        const pkg = dbToAppPackage(item as DbPackage);
-        
-        // Add shipment info
-        if (pkg.shipmentId && item.shipments) {
-          pkg.shipmentSource = item.shipments.source;
-          pkg.shipmentDestination = item.shipments.destination;
-        }
-        
-        return pkg;
-      });
-    },
+    queryFn: fetchPackages,
     enabled: !!user
   });
 
@@ -296,7 +222,6 @@ export const usePackages = () => {
     isDeleting: deletePackageMutation.isPending,
     isLoadingUsers,
     refetch,
-    allUsers,
-    allShipments
+    allUsers
   };
 };

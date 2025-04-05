@@ -224,7 +224,7 @@ export type DbRoute = {
   vendor_rate_per_ton: number;
   estimated_time: number;
   created_at: string;
-  assigned_package_id?: string; // Added this property
+  assigned_package_id?: string;
 };
 
 export type DbShipment = {
@@ -240,4 +240,5 @@ export type DbShipment = {
   remarks?: string;
   created_at: string;
   route_id?: string;
+  package_id?: string;
 };

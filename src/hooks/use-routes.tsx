@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbRoute } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { fetchPackages } from './use-packages';
 
 // Type for our app's route format
 export interface Route {
@@ -75,6 +77,12 @@ export const useRoutes = () => {
   } = useQuery({
     queryKey: ['routes'],
     queryFn: fetchRoutes
+  });
+  
+  // Query to fetch packages for assignment
+  const { data: packages = [] } = useQuery({
+    queryKey: ['packagesForRoutes'],
+    queryFn: fetchPackages
   });
 
   // Mutation to add a new route
@@ -164,9 +172,8 @@ export const useRoutes = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle package selection
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = e.target;
+  // Handle select changes
+  const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -215,8 +222,8 @@ export const useRoutes = () => {
       distanceKm: Number(formData.distanceKm),
       billingRatePerTon: Number(formData.billingRatePerTon),
       vendorRatePerTon: Number(formData.vendorRatePerTon),
-      estimatedTime: Number(formData.estimatedTime),
-      assignedPackageId: formData.assignedPackageId,
+      estimatedTime: Number(formData.estimatedTime || '0'),
+      assignedPackageId: formData.assignedPackageId || undefined,
     };
     
     if (selectedRoute) {
