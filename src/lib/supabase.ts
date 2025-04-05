@@ -242,3 +242,4 @@ export type DbShipment = {
   route_id?: string;
   package_id?: string;
 };
+

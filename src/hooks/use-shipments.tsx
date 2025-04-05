@@ -58,7 +58,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
   route_id: shipment.routeId,
-  package_id: shipment.packageId,
+  package_id: shipment.packageId && shipment.packageId !== 'none' ? shipment.packageId : null,
 });
 
 // Isolate the data fetching function
@@ -129,7 +129,7 @@ export const useShipments = () => {
     arrivalTime: '',
     remarks: '',
     routeId: '',
-    packageId: '',
+    packageId: 'none',
     billingRatePerTon: null,
     vendorRatePerTon: null,
   });
@@ -163,6 +163,8 @@ export const useShipments = () => {
             console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
           }
         }
+        
+        console.log('Creating shipment with data:', shipmentData);
         
         const { data, error } = await supabase
           .from('shipments')
@@ -318,7 +320,7 @@ export const useShipments = () => {
       arrivalTime: shipment.arrivalTime || '',
       remarks: shipment.remarks || '',
       routeId: shipment.routeId || '',
-      packageId: shipment.packageId || '',
+      packageId: shipment.packageId || 'none',
       billingRatePerTon: shipment.billingRatePerTon || null,
       vendorRatePerTon: shipment.vendorRatePerTon || null,
     });
@@ -345,7 +347,7 @@ export const useShipments = () => {
       arrivalTime: '',
       remarks: '',
       routeId: '',
-      packageId: '',
+      packageId: 'none',
       billingRatePerTon: null,
       vendorRatePerTon: null,
     });
@@ -366,7 +368,7 @@ export const useShipments = () => {
       arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
       routeId: formData.routeId || undefined,
-      packageId: formData.packageId || undefined,
+      packageId: formData.packageId === 'none' ? undefined : formData.packageId,
       billingRatePerTon: formData.billingRatePerTon,
       vendorRatePerTon: formData.vendorRatePerTon,
     };
@@ -408,5 +410,6 @@ export const useShipments = () => {
     transporters,
     vehicles,
     routes,
+    packages,
   };
 };

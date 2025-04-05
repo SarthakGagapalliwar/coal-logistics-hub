@@ -148,6 +148,7 @@ export type Database = {
           departure_time: string
           destination: string
           id: string
+          package_id: string | null
           quantity_tons: number
           remarks: string | null
           route_id: string | null
@@ -163,6 +164,7 @@ export type Database = {
           departure_time: string
           destination: string
           id?: string
+          package_id?: string | null
           quantity_tons: number
           remarks?: string | null
           route_id?: string | null
@@ -178,6 +180,7 @@ export type Database = {
           departure_time?: string
           destination?: string
           id?: string
+          package_id?: string | null
           quantity_tons?: number
           remarks?: string | null
           route_id?: string | null
@@ -188,6 +191,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shipments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shipments_route_id_fkey"
             columns: ["route_id"]
