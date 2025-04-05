@@ -4,43 +4,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useShipments } from '@/hooks/use-shipments';
 
 // Type for package from database
 interface DbPackage {
   id: string;
   name: string;
-  description: string | null;
-  weight_kg: number;
-  dimensions: string | null;
   status: string;
-  route_id: string | null;
-  assigned_user_id: string | null;
   created_by_id: string;
   billing_rate: number | null;
   vendor_rate: number | null;
-  tracking_number: string | null;
   created_at: string;
   updated_at: string;
+  shipment_id: string | null;
 }
 
 // Type for package in application
 export interface Package {
   id: string;
   name: string;
-  description: string | null;
-  weightKg: number;
-  dimensions: string | null;
   status: string;
-  routeId: string | null;
-  routeName?: string;
-  source?: string;
-  destination?: string;
-  assignedUserId: string | null;
-  assignedUsername?: string;
   createdById: string;
   billingRate: number | null;
   vendorRate: number | null;
-  trackingNumber: string | null;
+  shipmentId: string | null;
+  shipmentSource?: string;
+  shipmentDestination?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,16 +38,11 @@ export interface Package {
 const dbToAppPackage = (dbPackage: DbPackage): Package => ({
   id: dbPackage.id,
   name: dbPackage.name,
-  description: dbPackage.description,
-  weightKg: dbPackage.weight_kg,
-  dimensions: dbPackage.dimensions,
   status: dbPackage.status,
-  routeId: dbPackage.route_id,
-  assignedUserId: dbPackage.assigned_user_id,
   createdById: dbPackage.created_by_id,
   billingRate: dbPackage.billing_rate,
   vendorRate: dbPackage.vendor_rate,
-  trackingNumber: dbPackage.tracking_number,
+  shipmentId: dbPackage.shipment_id,
   createdAt: dbPackage.created_at,
   updatedAt: dbPackage.updated_at,
 });
@@ -66,26 +50,22 @@ const dbToAppPackage = (dbPackage: DbPackage): Package => ({
 // Convert app format to DB format
 const appToDbPackage = (pkg: Partial<Package>) => ({
   name: pkg.name,
-  description: pkg.description,
-  weight_kg: pkg.weightKg,
-  dimensions: pkg.dimensions,
   status: pkg.status,
-  route_id: pkg.routeId,
-  assigned_user_id: pkg.assignedUserId,
   billing_rate: pkg.billingRate,
   vendor_rate: pkg.vendorRate,
-  tracking_number: pkg.trackingNumber,
+  shipment_id: pkg.shipmentId,
 });
 
 export const usePackages = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { shipments } = useShipments();
   
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
-  // Fetch all users for admin assignment
+  // Query to fetch all users for admin assignment
   const { data: allUsers = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
@@ -111,6 +91,29 @@ export const usePackages = () => {
     enabled: !!user && isAdmin
   });
 
+  // Query to fetch all shipments for package assignment
+  const { data: allShipments = [] } = useQuery({
+    queryKey: ['allShipmentsForPackages'],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      console.log("Fetching all shipments for package assignment");
+      
+      const { data, error } = await supabase
+        .from('shipments')
+        .select('id, source, destination');
+      
+      if (error) {
+        console.error('Error fetching shipments:', error);
+        toast.error(`Failed to fetch shipments: ${error.message}`);
+        return [];
+      }
+      
+      return data || [];
+    },
+    enabled: !!user
+  });
+
   // Query to fetch packages
   const { 
     data: packages = [], 
@@ -124,14 +127,33 @@ export const usePackages = () => {
       
       console.log("Fetching packages");
       
-      // Step 1: Get packages with route information
+      // Fetch packages with related shipment information
       let query = supabase
         .from('packages')
-        .select(`*`);
+        .select(`
+          *,
+          shipments:shipment_id (source, destination)
+        `);
       
       // If not admin, only fetch packages for this user
       if (!isAdmin) {
-        query = query.or(`assigned_user_id.eq.${user.id},created_by_id.eq.${user.id}`);
+        // Using profiles.assigned_package_id to determine which packages the user can view
+        const { data: userProfiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('assigned_package_id')
+          .eq('id', user.id);
+        
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          throw new Error(profileError.message);
+        }
+        
+        if (userProfiles && userProfiles.length > 0 && userProfiles[0].assigned_package_id) {
+          query = query.eq('id', userProfiles[0].assigned_package_id);
+        } else {
+          // If no packages assigned, only show packages created by the user
+          query = query.eq('created_by_id', user.id);
+        }
       }
       
       const { data: packagesData, error } = await query;
@@ -143,72 +165,14 @@ export const usePackages = () => {
       
       console.log("Packages fetched:", packagesData);
       
-      // Step 2: Fetch route information separately
-      const routeIds = packagesData
-        .map((pkg: any) => pkg.route_id)
-        .filter((id: string | null) => id !== null);
-        
-      let routesData = [];
-      if (routeIds.length > 0) {
-        const { data: routes, error: routesError } = await supabase
-          .from('routes')
-          .select('id, source, destination')
-          .in('id', routeIds);
-          
-        if (routesError) {
-          console.error('Error fetching routes:', routesError);
-        } else {
-          routesData = routes || [];
-          console.log("Routes fetched:", routesData);
-        }
-      }
-      
-      // Step 3: Fetch user information separately
-      const userIds = packagesData
-        .map((pkg: any) => pkg.assigned_user_id)
-        .filter((id: string | null) => id !== null);
-        
-      let usersData = [];
-      if (userIds.length > 0) {
-        const { data: users, error: usersError } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .in('id', userIds);
-          
-        if (usersError) {
-          console.error('Error fetching users:', usersError);
-        } else {
-          usersData = users || [];
-          console.log("Users fetched for packages:", usersData);
-        }
-      }
-      
-      // Create maps for quick lookups
-      const routeMap = routesData.reduce((map: Record<string, any>, route: any) => {
-        map[route.id] = route;
-        return map;
-      }, {});
-      
-      const userMap = usersData.reduce((map: Record<string, string>, user: any) => {
-        map[user.id] = user.username;
-        return map;
-      }, {});
-      
       // Combine all data
       return packagesData.map((item: any): Package => {
         const pkg = dbToAppPackage(item as DbPackage);
         
-        // Add route info
-        if (pkg.routeId && routeMap[pkg.routeId]) {
-          const route = routeMap[pkg.routeId];
-          pkg.routeName = `${route.source} to ${route.destination}`;
-          pkg.source = route.source;
-          pkg.destination = route.destination;
-        }
-        
-        // Add user info
-        if (pkg.assignedUserId && userMap[pkg.assignedUserId]) {
-          pkg.assignedUsername = userMap[pkg.assignedUserId];
+        // Add shipment info
+        if (pkg.shipmentId && item.shipments) {
+          pkg.shipmentSource = item.shipments.source;
+          pkg.shipmentDestination = item.shipments.destination;
         }
         
         return pkg;
@@ -332,6 +296,7 @@ export const usePackages = () => {
     isDeleting: deletePackageMutation.isPending,
     isLoadingUsers,
     refetch,
-    allUsers
+    allUsers,
+    allShipments
   };
 };

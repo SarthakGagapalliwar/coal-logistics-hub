@@ -47,24 +47,20 @@ const Packages = () => {
   const [packageToDelete, setPackageToDelete] = useState<string | null>(null);
 
   const columns = [
-    { header: "Tracking Number", accessorKey: "trackingNumber" },
     { header: "Name", accessorKey: "name" },
-    { header: "Weight (kg)", accessorKey: "weightKg" },
-    { header: "Dimensions", accessorKey: "dimensions" },
     { header: "Status", accessorKey: "status", cell: (row: any) => (
       <Badge variant={getStatusVariant(row.status)}>{row.status}</Badge>
     )},
     { 
-      header: "Route", 
-      accessorKey: "routeName",
+      header: "Associated Shipment", 
+      accessorKey: "shipmentSource",
       cell: (row: any) => (
-        <span>{row.routeName ? row.routeName : '-'}</span>
+        <span>
+          {row.shipmentSource && row.shipmentDestination 
+            ? `${row.shipmentSource} to ${row.shipmentDestination}` 
+            : '-'}
+        </span>
       )
-    },
-    { 
-      header: "Assigned User", 
-      accessorKey: "assignedUsername",
-      cell: (row: any) => <span>{row.assignedUsername || '-'}</span>
     },
     { header: "Vendor Rate", accessorKey: "vendorRate" },
     { header: "Billing Rate", accessorKey: "billingRate" },
