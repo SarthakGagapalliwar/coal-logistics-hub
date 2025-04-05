@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { usePackages } from "@/hooks/use-packages";
 import { supabase } from "@/lib/supabase";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -48,12 +49,14 @@ interface User {
   username: string;
   role: UserRole;
   created_at: string;
-  password?: string; // Store password temporarily for admin view
+  assigned_package_id?: string | null;
+  password?: string;
 }
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const { user, createUser } = useAuth();
+  const { packages } = usePackages();
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
@@ -62,6 +65,7 @@ const UserManagement = () => {
     password: "",
     username: "",
     role: "user" as UserRole,
+    assigned_package_id: "" as string | null,
   });
 
   useEffect(() => {
@@ -80,7 +84,7 @@ const UserManagement = () => {
       console.log("Fetching users from profiles table...");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, role, created_at")
+        .select("id, username, role, created_at, assigned_package_id")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -150,6 +154,13 @@ const UserManagement = () => {
       role: value as UserRole,
     });
   };
+  
+  const handlePackageChange = (value: string) => {
+    setFormData({
+      ...formData,
+      assigned_package_id: value === "none" ? null : value,
+    });
+  };
 
   const handleCreateUser = async () => {
     setIsLoading(true);
@@ -157,16 +168,30 @@ const UserManagement = () => {
       console.log("Creating new user with:", { 
         email: formData.email, 
         username: formData.username, 
-        role: formData.role 
+        role: formData.role,
+        assigned_package_id: formData.assigned_package_id
       });
       
       // Use the createUser method from AuthContext
-      const success = await createUser(
+      const { success, userId } = await createUser(
         formData.email,
         formData.password,
         formData.username,
         formData.role
       );
+
+      if (success && userId && formData.assigned_package_id) {
+        // Update the user's assigned package
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ assigned_package_id: formData.assigned_package_id })
+          .eq('id', userId);
+          
+        if (profileUpdateError) {
+          console.error("Error assigning package to user:", profileUpdateError);
+          toast.error(`User created but failed to assign package: ${profileUpdateError.message}`);
+        }
+      }
 
       if (success) {
         toast.success("User created successfully");
@@ -177,6 +202,7 @@ const UserManagement = () => {
           email: formData.email,
           username: formData.username,
           role: formData.role,
+          assigned_package_id: formData.assigned_package_id,
           created_at: new Date().toISOString(),
           password: formData.password // Store password temporarily for admin view
         };
@@ -216,6 +242,7 @@ const UserManagement = () => {
       password: "",
       username: "",
       role: "user",
+      assigned_package_id: null,
     });
   };
 
@@ -223,6 +250,13 @@ const UserManagement = () => {
   if (user?.role !== "admin") {
     return null;
   }
+
+  // Helper function to get package name by ID
+  const getPackageName = (packageId: string | null | undefined) => {
+    if (!packageId) return "None";
+    const pkg = packages.find(p => p.id === packageId);
+    return pkg ? pkg.name : "Unknown Package";
+  };
 
   return (
     <DashboardLayout>
@@ -301,6 +335,24 @@ const UserManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_package">Assign Package</Label>
+                  <Select
+                    value={formData.assigned_package_id || "none"}
+                    onValueChange={handlePackageChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select package" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {packages.map((pkg) => (
+                        <SelectItem key={pkg.id} value={pkg.id}>{pkg.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               <DialogFooter>
@@ -334,6 +386,7 @@ const UserManagement = () => {
                     <TableHead>Username</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Assigned Package</TableHead>
                     <TableHead>Created</TableHead>
                     {user.role === 'admin' && <TableHead>Password</TableHead>}
                   </TableRow>
@@ -341,22 +394,23 @@ const UserManagement = () => {
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={user.role === 'admin' ? 5 : 4} className="text-center py-6">
+                      <TableCell colSpan={user.role === 'admin' ? 6 : 5} className="text-center py-6">
                         No users found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell className="capitalize">{user.role}</TableCell>
+                    users.map((userItem) => (
+                      <TableRow key={userItem.id}>
+                        <TableCell>{userItem.username}</TableCell>
+                        <TableCell>{userItem.email}</TableCell>
+                        <TableCell className="capitalize">{userItem.role}</TableCell>
+                        <TableCell>{getPackageName(userItem.assigned_package_id)}</TableCell>
                         <TableCell>
-                          {new Date(user.created_at).toLocaleDateString()}
+                          {new Date(userItem.created_at).toLocaleDateString()}
                         </TableCell>
                         {user.role === 'admin' && (
                           <TableCell>
-                            {user.password ? user.password : "••••••••"}
+                            {userItem.password ? userItem.password : "••••••••"}
                           </TableCell>
                         )}
                       </TableRow>

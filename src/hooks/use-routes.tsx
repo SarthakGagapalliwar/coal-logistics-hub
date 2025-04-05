@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbRoute, handleSupabaseError } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { usePackages } from '@/hooks/use-packages';
 
-// Type for our app's route format
+// Type for route from database
 export interface Route {
   id: string;
   source: string;
@@ -13,6 +14,7 @@ export interface Route {
   billingRatePerTon: number;
   vendorRatePerTon: number;
   estimatedTime: number;
+  assignedPackageId?: string | null;
 }
 
 // Convert DB format to app format
@@ -24,6 +26,7 @@ const dbToAppRoute = (dbRoute: DbRoute): Route => ({
   billingRatePerTon: dbRoute.billing_rate_per_ton,
   vendorRatePerTon: dbRoute.vendor_rate_per_ton,
   estimatedTime: dbRoute.estimated_time,
+  assignedPackageId: dbRoute.assigned_package_id,
 });
 
 // Convert app format to DB format
@@ -34,10 +37,13 @@ const appToDbRoute = (route: Partial<Route>) => ({
   billing_rate_per_ton: route.billingRatePerTon,
   vendor_rate_per_ton: route.vendorRatePerTon,
   estimated_time: route.estimatedTime,
+  assigned_package_id: route.assignedPackageId,
 });
 
 export const useRoutes = () => {
   const queryClient = useQueryClient();
+  const { packages } = usePackages();
+  
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   
@@ -48,6 +54,7 @@ export const useRoutes = () => {
     billingRatePerTon: '',
     vendorRatePerTon: '',
     estimatedTime: '',
+    assignedPackageId: null as string | null,
   });
 
   // Query to fetch routes
@@ -60,14 +67,20 @@ export const useRoutes = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('routes')
-        .select('*')
+        .select('*, packages:assigned_package_id(name)')
         .order('source');
       
       if (error) {
         throw new Error(error.message);
       }
       
-      return (data as DbRoute[]).map(dbToAppRoute);
+      return data.map((item: any) => {
+        const route = dbToAppRoute(item as DbRoute);
+        return {
+          ...route,
+          packageName: item.packages ? item.packages.name : null
+        };
+      });
     }
   });
 
@@ -158,6 +171,11 @@ export const useRoutes = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle package selection
+  const handlePackageChange = (packageId: string | null) => {
+    setFormData(prev => ({ ...prev, assignedPackageId: packageId }));
+  };
+
   // Set up to edit a route
   const handleEditRoute = (route: Route) => {
     setSelectedRoute(route);
@@ -168,6 +186,7 @@ export const useRoutes = () => {
       billingRatePerTon: route.billingRatePerTon.toString(),
       vendorRatePerTon: route.vendorRatePerTon.toString(),
       estimatedTime: route.estimatedTime.toString(),
+      assignedPackageId: route.assignedPackageId || null,
     });
     setOpenDialog(true);
   };
@@ -188,6 +207,7 @@ export const useRoutes = () => {
       billingRatePerTon: '',
       vendorRatePerTon: '',
       estimatedTime: '',
+      assignedPackageId: null,
     });
   };
 
@@ -202,6 +222,7 @@ export const useRoutes = () => {
       billingRatePerTon: Number(formData.billingRatePerTon),
       vendorRatePerTon: Number(formData.vendorRatePerTon),
       estimatedTime: Number(formData.estimatedTime),
+      assignedPackageId: formData.assignedPackageId,
     };
     
     if (selectedRoute) {
@@ -221,6 +242,12 @@ export const useRoutes = () => {
     deleteRouteMutation.mutate(id);
   };
 
+  // Get package details by ID
+  const getPackageById = (packageId: string | null | undefined) => {
+    if (!packageId) return null;
+    return packages.find(pkg => pkg.id === packageId);
+  };
+
   return {
     routes,
     isLoading,
@@ -230,11 +257,14 @@ export const useRoutes = () => {
     selectedRoute,
     formData,
     handleInputChange,
+    handlePackageChange,
     handleEditRoute,
     handleAddRoute,
     handleSubmit,
     handleDeleteRoute,
     isSubmitting: addRouteMutation.isPending || updateRouteMutation.isPending,
     isDeleting: deleteRouteMutation.isPending,
+    packages,
+    getPackageById,
   };
 };
