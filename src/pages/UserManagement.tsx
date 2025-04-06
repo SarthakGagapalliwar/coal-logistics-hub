@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { toast } from "sonner";
@@ -53,10 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserRole } from "@/context/AuthContext";
 import { Edit, Trash } from "lucide-react";
-import { 
-  Checkbox,
-  CheckboxIndicator
-} from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface User {
@@ -91,7 +87,6 @@ const UserManagement = () => {
   });
 
   useEffect(() => {
-    // Redirect if not admin
     if (user && user.role !== "admin") {
       toast.error("You don't have permission to access this page");
       navigate("/dashboard");
@@ -115,15 +110,9 @@ const UserManagement = () => {
 
       console.log("Profiles data fetched:", data);
 
-      // Fetch emails separately from auth.users
-      // Note: In a real app with admin access, you'd use Supabase admin functions
-      // For now, we'll use a workaround to approximate this functionality
       const emailsData = await Promise.all(
         data.map(async (profile) => {
-          // Try to fetch email from the auth schema (this is just for demo, in production use admin API)
           try {
-            // We're making a direct query to mimic getting user data
-            // In a real app, you'd use supabase-js admin client or create a secure edge function
             const { data: userData, error: userError } = await supabase
               .rpc('get_user_email', { user_id: profile.id })
               .select('email')
@@ -131,13 +120,13 @@ const UserManagement = () => {
 
             return {
               id: profile.id,
-              email: userData?.email || `${profile.username}@example.com`, // Fallback for demo
+              email: userData?.email || `${profile.username}@example.com`,
             };
           } catch (err) {
             console.error("Error fetching email for user:", err);
             return {
               id: profile.id,
-              email: `${profile.username}@example.com`, // Fallback email format
+              email: `${profile.username}@example.com`,
             };
           }
         })
@@ -145,7 +134,6 @@ const UserManagement = () => {
 
       console.log("Emails data:", emailsData);
 
-      // Combine profile data with emails
       const usersWithEmails = data.map((profile) => {
         const emailData = emailsData.find((e) => e.id === profile.id);
         return {
@@ -177,7 +165,7 @@ const UserManagement = () => {
       role: value as UserRole,
     });
   };
-  
+
   const handlePackageCheckboxChange = (packageId: string) => {
     setFormData(prevState => {
       const currentPackages = [...prevState.assigned_packages];
@@ -224,7 +212,6 @@ const UserManagement = () => {
         assigned_packages: formData.assigned_packages
       });
       
-      // Use the createUser method from AuthContext
       const result = await createUser(
         formData.email,
         formData.password,
@@ -233,7 +220,6 @@ const UserManagement = () => {
       );
 
       if (result) {
-        // Update the user's assigned packages
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ assigned_packages: formData.assigned_packages })
@@ -245,7 +231,6 @@ const UserManagement = () => {
         
         toast.success(`User created successfully`);
         
-        // Add the newly created user to the list with the password for admin view
         const newUser: User = {
           id: result.id,
           email: formData.email,
@@ -253,14 +238,13 @@ const UserManagement = () => {
           role: formData.role,
           assigned_packages: formData.assigned_packages,
           created_at: new Date().toISOString(),
-          password: formData.password // Store password temporarily for admin view
+          password: formData.password
         };
         
         setUsers([newUser, ...users]);
         setOpen(false);
         resetForm();
         
-        // Refresh the user list after a short delay to get the actual user record
         setTimeout(() => {
           fetchUsers();
         }, 1000);
@@ -270,7 +254,6 @@ const UserManagement = () => {
     } catch (error: any) {
       console.error("Error creating user:", error);
       
-      // More user-friendly error messages
       if (error.message.includes("duplicate key")) {
         toast.error("Email already exists");
       } else if (error.message.includes("invalid email")) {
@@ -314,7 +297,6 @@ const UserManagement = () => {
       
       toast.success("User updated successfully");
       
-      // Update the local state
       const updatedUsers = users.map(u => {
         if (u.id === selectedUser.id) {
           return {
@@ -340,7 +322,6 @@ const UserManagement = () => {
     
     setIsLoading(true);
     try {
-      // Delete the user using RPC function
       const { error } = await supabase
         .rpc('delete_user', { user_id: selectedUser.id });
 
@@ -348,7 +329,6 @@ const UserManagement = () => {
       
       toast.success("User deleted successfully");
       
-      // Remove from local state
       setUsers(users.filter(u => u.id !== selectedUser.id));
       setDeleteDialogOpen(false);
     } catch (error: any) {
@@ -369,12 +349,10 @@ const UserManagement = () => {
     });
   };
 
-  // Check if user is admin before rendering the page
   if (user?.role !== "admin") {
     return null;
   }
 
-  // Helper function to get package names by IDs
   const getPackageNames = (packageIds: string[] | null | undefined) => {
     if (!packageIds || packageIds.length === 0) return "None";
     
@@ -581,7 +559,6 @@ const UserManagement = () => {
         </Card>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -637,7 +614,6 @@ const UserManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
