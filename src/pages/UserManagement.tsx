@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { toast } from "sonner";
@@ -166,39 +167,51 @@ const UserManagement = () => {
     });
   };
 
-  const handlePackageCheckboxChange = (packageId: string) => {
+  const handlePackageCheckboxChange = (packageId: string, checked: boolean) => {
     setFormData(prevState => {
       const currentPackages = [...prevState.assigned_packages];
       
-      if (currentPackages.includes(packageId)) {
+      if (checked) {
+        // If checked and not already in the array, add it
+        if (!currentPackages.includes(packageId)) {
+          return {
+            ...prevState,
+            assigned_packages: [...currentPackages, packageId]
+          };
+        }
+      } else {
+        // If unchecked, remove from array
         return {
           ...prevState,
           assigned_packages: currentPackages.filter(id => id !== packageId)
         };
-      } else {
-        return {
-          ...prevState,
-          assigned_packages: [...currentPackages, packageId]
-        };
       }
+      
+      return prevState; // No change if already in desired state
     });
   };
 
-  const handleEditPackageCheckboxChange = (packageId: string) => {
+  const handleEditPackageCheckboxChange = (packageId: string, checked: boolean) => {
     setEditFormData(prevState => {
       const currentPackages = [...prevState.assigned_packages];
       
-      if (currentPackages.includes(packageId)) {
+      if (checked) {
+        // If checked and not already in the array, add it
+        if (!currentPackages.includes(packageId)) {
+          return {
+            ...prevState,
+            assigned_packages: [...currentPackages, packageId]
+          };
+        }
+      } else {
+        // If unchecked, remove from array
         return {
           ...prevState,
           assigned_packages: currentPackages.filter(id => id !== packageId)
         };
-      } else {
-        return {
-          ...prevState,
-          assigned_packages: [...currentPackages, packageId]
-        };
       }
+      
+      return prevState; // No change if already in desired state
     });
   };
 
@@ -452,7 +465,7 @@ const UserManagement = () => {
                             <Checkbox 
                               id={`create-package-${pkg.id}`}
                               checked={formData.assigned_packages.includes(pkg.id)}
-                              onCheckedChange={() => handlePackageCheckboxChange(pkg.id)}
+                              onCheckedChange={(checked) => handlePackageCheckboxChange(pkg.id, !!checked)}
                             />
                             <label 
                               htmlFor={`create-package-${pkg.id}`}
@@ -579,7 +592,7 @@ const UserManagement = () => {
                         <Checkbox 
                           id={`edit-package-${pkg.id}`}
                           checked={editFormData.assigned_packages.includes(pkg.id)}
-                          onCheckedChange={() => handleEditPackageCheckboxChange(pkg.id)}
+                          onCheckedChange={(checked) => handleEditPackageCheckboxChange(pkg.id, !!checked)}
                         />
                         <label 
                           htmlFor={`edit-package-${pkg.id}`}
