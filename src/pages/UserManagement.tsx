@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { toast } from "sonner";
@@ -172,7 +171,6 @@ const UserManagement = () => {
       const currentPackages = [...prevState.assigned_packages];
       
       if (checked) {
-        // If checked and not already in the array, add it
         if (!currentPackages.includes(packageId)) {
           return {
             ...prevState,
@@ -180,14 +178,13 @@ const UserManagement = () => {
           };
         }
       } else {
-        // If unchecked, remove from array
         return {
           ...prevState,
           assigned_packages: currentPackages.filter(id => id !== packageId)
         };
       }
       
-      return prevState; // No change if already in desired state
+      return prevState;
     });
   };
 
@@ -196,7 +193,6 @@ const UserManagement = () => {
       const currentPackages = [...prevState.assigned_packages];
       
       if (checked) {
-        // If checked and not already in the array, add it
         if (!currentPackages.includes(packageId)) {
           return {
             ...prevState,
@@ -204,14 +200,13 @@ const UserManagement = () => {
           };
         }
       } else {
-        // If unchecked, remove from array
         return {
           ...prevState,
           assigned_packages: currentPackages.filter(id => id !== packageId)
         };
       }
       
-      return prevState; // No change if already in desired state
+      return prevState;
     });
   };
 
@@ -465,7 +460,7 @@ const UserManagement = () => {
                             <Checkbox 
                               id={`create-package-${pkg.id}`}
                               checked={formData.assigned_packages.includes(pkg.id)}
-                              onCheckedChange={(checked) => handlePackageCheckboxChange(pkg.id, !!checked)}
+                              onCheckedChange={(checked) => handlePackageCheckboxChange(pkg.id, checked === true)}
                             />
                             <label 
                               htmlFor={`create-package-${pkg.id}`}
@@ -592,7 +587,7 @@ const UserManagement = () => {
                         <Checkbox 
                           id={`edit-package-${pkg.id}`}
                           checked={editFormData.assigned_packages.includes(pkg.id)}
-                          onCheckedChange={(checked) => handleEditPackageCheckboxChange(pkg.id, !!checked)}
+                          onCheckedChange={(checked) => handleEditPackageCheckboxChange(pkg.id, checked === true)}
                         />
                         <label 
                           htmlFor={`edit-package-${pkg.id}`}
