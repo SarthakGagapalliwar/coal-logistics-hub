@@ -47,8 +47,6 @@ const Packages = () => {
 
   const columns = [
     { header: "Name", accessorKey: "name" },
-    { header: "Vendor Rate", accessorKey: "vendorRate" },
-    { header: "Billing Rate", accessorKey: "billingRate" },
     {
       header: "Actions",
       accessorKey: "actions",

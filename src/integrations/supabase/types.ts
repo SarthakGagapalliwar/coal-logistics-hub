@@ -11,7 +11,6 @@ export type Database = {
     Tables: {
       packages: {
         Row: {
-          billing_rate: number | null
           created_at: string
           created_by_id: string
           id: string
@@ -19,10 +18,8 @@ export type Database = {
           shipment_id: string | null
           status: string
           updated_at: string
-          vendor_rate: number | null
         }
         Insert: {
-          billing_rate?: number | null
           created_at?: string
           created_by_id: string
           id?: string
@@ -30,10 +27,8 @@ export type Database = {
           shipment_id?: string | null
           status?: string
           updated_at?: string
-          vendor_rate?: number | null
         }
         Update: {
-          billing_rate?: number | null
           created_at?: string
           created_by_id?: string
           id?: string
@@ -41,7 +36,6 @@ export type Database = {
           shipment_id?: string | null
           status?: string
           updated_at?: string
-          vendor_rate?: number | null
         }
         Relationships: [
           {
@@ -55,7 +49,7 @@ export type Database = {
       }
       profiles: {
         Row: {
-          assigned_package_id: string | null
+          assigned_packages: string[] | null
           created_at: string
           full_name: string | null
           id: string
@@ -65,7 +59,7 @@ export type Database = {
           username: string
         }
         Insert: {
-          assigned_package_id?: string | null
+          assigned_packages?: string[] | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -75,7 +69,7 @@ export type Database = {
           username: string
         }
         Update: {
-          assigned_package_id?: string | null
+          assigned_packages?: string[] | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -84,15 +78,7 @@ export type Database = {
           updated_at?: string
           username?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_assigned_package_id_fkey"
-            columns: ["assigned_package_id"]
-            isOneToOne: false
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       routes: {
         Row: {

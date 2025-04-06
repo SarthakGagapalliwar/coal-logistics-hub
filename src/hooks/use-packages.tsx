@@ -10,8 +10,6 @@ interface DbPackage {
   id: string;
   name: string;
   created_by_id: string;
-  billing_rate: number | null;
-  vendor_rate: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,8 +19,6 @@ export interface Package {
   id: string;
   name: string;
   createdById: string;
-  billingRate: number | null;
-  vendorRate: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,8 +28,6 @@ const dbToAppPackage = (dbPackage: DbPackage): Package => ({
   id: dbPackage.id,
   name: dbPackage.name,
   createdById: dbPackage.created_by_id,
-  billingRate: dbPackage.billing_rate,
-  vendorRate: dbPackage.vendor_rate,
   createdAt: dbPackage.created_at,
   updatedAt: dbPackage.updated_at,
 });
@@ -41,8 +35,6 @@ const dbToAppPackage = (dbPackage: DbPackage): Package => ({
 // Convert app format to DB format
 const appToDbPackage = (pkg: Partial<Package>) => ({
   name: pkg.name,
-  billing_rate: pkg.billingRate,
-  vendor_rate: pkg.vendorRate,
 });
 
 // Isolate the data fetching function

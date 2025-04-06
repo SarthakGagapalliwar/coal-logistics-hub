@@ -20,8 +20,6 @@ import { Loader2 } from 'lucide-react';
 
 const packageSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  billingRate: z.coerce.number().optional().nullable(),
-  vendorRate: z.coerce.number().optional().nullable(),
 });
 
 type PackageFormValues = z.infer<typeof packageSchema>;
@@ -39,8 +37,6 @@ const PackageForm = () => {
     resolver: zodResolver(packageSchema),
     defaultValues: {
       name: '',
-      vendorRate: null,
-      billingRate: null,
     },
   });
 
@@ -48,8 +44,6 @@ const PackageForm = () => {
     if (selectedPackage) {
       form.reset({
         name: selectedPackage.name,
-        vendorRate: selectedPackage.vendorRate || null,
-        billingRate: selectedPackage.billingRate || null,
       });
     }
   }, [selectedPackage, form]);
@@ -57,8 +51,6 @@ const PackageForm = () => {
   const onSubmit = (values: PackageFormValues) => {
     const packageData = {
       name: values.name,
-      vendorRate: values.vendorRate,
-      billingRate: values.billingRate,
     };
 
     if (selectedPackage) {
@@ -89,48 +81,6 @@ const PackageForm = () => {
                 <FormLabel>Package Name</FormLabel>
                 <FormControl>
                   <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="vendorRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vendor Rate</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    {...field} 
-                    value={field.value === null ? '' : field.value} 
-                    onChange={(e) => field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="billingRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Billing Rate</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    {...field} 
-                    value={field.value === null ? '' : field.value} 
-                    onChange={(e) => field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
-                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

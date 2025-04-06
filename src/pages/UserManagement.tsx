@@ -53,6 +53,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserRole } from "@/context/AuthContext";
 import { Edit, Trash } from "lucide-react";
+import { 
+  Checkbox,
+  CheckboxIndicator
+} from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface User {
   id: string;
@@ -60,7 +65,7 @@ interface User {
   username: string;
   role: UserRole;
   created_at: string;
-  assigned_package_id?: string | null;
+  assigned_packages?: string[] | null;
   password?: string;
 }
 
@@ -79,10 +84,10 @@ const UserManagement = () => {
     password: "",
     username: "",
     role: "user" as UserRole,
-    assigned_package_id: "" as string | null,
+    assigned_packages: [] as string[],
   });
   const [editFormData, setEditFormData] = useState({
-    assigned_package_id: "" as string | null,
+    assigned_packages: [] as string[],
   });
 
   useEffect(() => {
@@ -101,7 +106,7 @@ const UserManagement = () => {
       console.log("Fetching users from profiles table...");
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, role, created_at, assigned_package_id")
+        .select("id, username, role, created_at, assigned_packages")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -146,6 +151,7 @@ const UserManagement = () => {
         return {
           ...profile,
           email: emailData?.email || "No email available",
+          assigned_packages: profile.assigned_packages || [],
         };
       });
 
@@ -172,10 +178,39 @@ const UserManagement = () => {
     });
   };
   
-  const handlePackageChange = (value: string) => {
-    setFormData({
-      ...formData,
-      assigned_package_id: value === "none" ? null : value,
+  const handlePackageCheckboxChange = (packageId: string) => {
+    setFormData(prevState => {
+      const currentPackages = [...prevState.assigned_packages];
+      
+      if (currentPackages.includes(packageId)) {
+        return {
+          ...prevState,
+          assigned_packages: currentPackages.filter(id => id !== packageId)
+        };
+      } else {
+        return {
+          ...prevState,
+          assigned_packages: [...currentPackages, packageId]
+        };
+      }
+    });
+  };
+
+  const handleEditPackageCheckboxChange = (packageId: string) => {
+    setEditFormData(prevState => {
+      const currentPackages = [...prevState.assigned_packages];
+      
+      if (currentPackages.includes(packageId)) {
+        return {
+          ...prevState,
+          assigned_packages: currentPackages.filter(id => id !== packageId)
+        };
+      } else {
+        return {
+          ...prevState,
+          assigned_packages: [...currentPackages, packageId]
+        };
+      }
     });
   };
 
@@ -186,7 +221,7 @@ const UserManagement = () => {
         email: formData.email, 
         username: formData.username, 
         role: formData.role,
-        assigned_package_id: formData.assigned_package_id
+        assigned_packages: formData.assigned_packages
       });
       
       // Use the createUser method from AuthContext
@@ -198,15 +233,25 @@ const UserManagement = () => {
       );
 
       if (result) {
+        // Update the user's assigned packages
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ assigned_packages: formData.assigned_packages })
+          .eq('id', result.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+        
         toast.success(`User created successfully`);
         
         // Add the newly created user to the list with the password for admin view
         const newUser: User = {
-          id: "temp-" + Date.now(), // This will be replaced on next fetch
+          id: result.id,
           email: formData.email,
           username: formData.username,
           role: formData.role,
-          assigned_package_id: formData.assigned_package_id,
+          assigned_packages: formData.assigned_packages,
           created_at: new Date().toISOString(),
           password: formData.password // Store password temporarily for admin view
         };
@@ -243,7 +288,7 @@ const UserManagement = () => {
   const handleEditUser = (userItem: User) => {
     setSelectedUser(userItem);
     setEditFormData({
-      assigned_package_id: userItem.assigned_package_id || null,
+      assigned_packages: userItem.assigned_packages || [],
     });
     setEditDialogOpen(true);
   };
@@ -261,7 +306,7 @@ const UserManagement = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          assigned_package_id: editFormData.assigned_package_id === "none" ? null : editFormData.assigned_package_id 
+          assigned_packages: editFormData.assigned_packages
         })
         .eq('id', selectedUser.id);
 
@@ -274,7 +319,7 @@ const UserManagement = () => {
         if (u.id === selectedUser.id) {
           return {
             ...u,
-            assigned_package_id: editFormData.assigned_package_id
+            assigned_packages: editFormData.assigned_packages
           };
         }
         return u;
@@ -295,21 +340,7 @@ const UserManagement = () => {
     
     setIsLoading(true);
     try {
-      // If user had an assigned package, we need to reassign or clean up
-      if (selectedUser.assigned_package_id) {
-        // Clear package assignment before deleting user
-        const { error: packageError } = await supabase
-          .from('packages')
-          .update({ assigned_package_id: null })
-          .eq('id', selectedUser.assigned_package_id);
-          
-        if (packageError) {
-          console.error("Error clearing package assignment:", packageError);
-        }
-      }
-      
-      // Delete the user from auth schema via RPC function
-      // Note: In a real app, you'd use Supabase admin functions or a secure edge function
+      // Delete the user using RPC function
       const { error } = await supabase
         .rpc('delete_user', { user_id: selectedUser.id });
 
@@ -328,20 +359,13 @@ const UserManagement = () => {
     }
   };
 
-  const handleEditPackageChange = (value: string) => {
-    setEditFormData({
-      ...editFormData,
-      assigned_package_id: value === "none" ? null : value,
-    });
-  };
-
   const resetForm = () => {
     setFormData({
       email: "",
       password: "",
       username: "",
       role: "user",
-      assigned_package_id: null,
+      assigned_packages: [],
     });
   };
 
@@ -350,11 +374,16 @@ const UserManagement = () => {
     return null;
   }
 
-  // Helper function to get package name by ID
-  const getPackageName = (packageId: string | null | undefined) => {
-    if (!packageId) return "None";
-    const pkg = packages.find(p => p.id === packageId);
-    return pkg ? pkg.name : "Unknown Package";
+  // Helper function to get package names by IDs
+  const getPackageNames = (packageIds: string[] | null | undefined) => {
+    if (!packageIds || packageIds.length === 0) return "None";
+    
+    return packageIds
+      .map(id => {
+        const pkg = packages.find(p => p.id === id);
+        return pkg ? pkg.name : "Unknown";
+      })
+      .join(", ");
   };
 
   return (
@@ -436,21 +465,30 @@ const UserManagement = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="assigned_package">Assign Package</Label>
-                  <Select
-                    value={formData.assigned_package_id || "none"}
-                    onValueChange={handlePackageChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select package" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {packages.map((pkg) => (
-                        <SelectItem key={pkg.id} value={pkg.id}>{pkg.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Assign Packages</Label>
+                  <ScrollArea className="h-60 border rounded-md p-2">
+                    <div className="space-y-2">
+                      {packages.length > 0 ? (
+                        packages.map((pkg) => (
+                          <div key={pkg.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`create-package-${pkg.id}`}
+                              checked={formData.assigned_packages.includes(pkg.id)}
+                              onCheckedChange={() => handlePackageCheckboxChange(pkg.id)}
+                            />
+                            <label 
+                              htmlFor={`create-package-${pkg.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {pkg.name}
+                            </label>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">No packages available</p>
+                      )}
+                    </div>
+                  </ScrollArea>
                 </div>
               </div>
               
@@ -485,7 +523,7 @@ const UserManagement = () => {
                     <TableHead>Username</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Assigned Package</TableHead>
+                    <TableHead>Assigned Packages</TableHead>
                     <TableHead>Created</TableHead>
                     {user?.role === 'admin' && <TableHead>Password</TableHead>}
                     <TableHead>Actions</TableHead>
@@ -504,7 +542,7 @@ const UserManagement = () => {
                         <TableCell>{userItem.username}</TableCell>
                         <TableCell>{userItem.email}</TableCell>
                         <TableCell className="capitalize">{userItem.role}</TableCell>
-                        <TableCell>{getPackageName(userItem.assigned_package_id)}</TableCell>
+                        <TableCell>{getPackageNames(userItem.assigned_packages)}</TableCell>
                         <TableCell>
                           {new Date(userItem.created_at).toLocaleDateString()}
                         </TableCell>
@@ -549,27 +587,36 @@ const UserManagement = () => {
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update package assignment for {selectedUser?.username}.
+              Update package assignments for {selectedUser?.username}.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_assigned_package">Assign Package</Label>
-              <Select
-                value={editFormData.assigned_package_id || "none"}
-                onValueChange={handleEditPackageChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select package" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {packages.map((pkg) => (
-                    <SelectItem key={pkg.id} value={pkg.id}>{pkg.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Assign Packages</Label>
+              <ScrollArea className="h-60 border rounded-md p-2">
+                <div className="space-y-2">
+                  {packages.length > 0 ? (
+                    packages.map((pkg) => (
+                      <div key={pkg.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`edit-package-${pkg.id}`}
+                          checked={editFormData.assigned_packages.includes(pkg.id)}
+                          onCheckedChange={() => handleEditPackageCheckboxChange(pkg.id)}
+                        />
+                        <label 
+                          htmlFor={`edit-package-${pkg.id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {pkg.name}
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No packages available</p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
           
