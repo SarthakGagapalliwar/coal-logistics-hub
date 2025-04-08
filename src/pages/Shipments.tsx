@@ -63,6 +63,7 @@ const Shipments = () => {
     vehicles,
     routes,
     packages,
+    isSubmitting,
   } = useShipments();
 
   const isMobile = useIsMobile();

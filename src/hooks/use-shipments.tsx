@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -427,7 +426,6 @@ export const useShipments = () => {
     handleEditShipment,
     handleAddShipment,
     handleSubmit,
-    handleDeleteShipment,
     isSubmitting: addShipmentMutation.isPending || updateShipmentMutation.isPending,
     isDeleting: deleteShipmentMutation.isPending,
     transporters,
