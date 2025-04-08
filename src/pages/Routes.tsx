@@ -131,9 +131,12 @@ const RoutesPage = () => {
 
   // For mobile, show fewer columns
   const mobileColumns = isMobile
-    ? columns.filter((col) =>
-        ["ID", "Origin", "Destination", "Actions"].includes(col.header)
-      )
+    ? columns.filter((col) => {
+        if (typeof col.header === 'string') {
+          return ["ID", "Origin", "Destination", "Actions"].includes(col.header);
+        }
+        return false;
+      })
     : columns;
 
   return (

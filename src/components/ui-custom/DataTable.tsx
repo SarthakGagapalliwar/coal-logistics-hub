@@ -52,6 +52,14 @@ const DataTable = <T extends Record<string, any>>({
     setCurrentPage(page);
   };
 
+  // Helper function to render the header content based on its type
+  const renderHeader = (header: Column['header'], table?: any) => {
+    if (typeof header === 'function') {
+      return header({ table });
+    }
+    return header;
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       {searchKey && (
@@ -74,7 +82,7 @@ const DataTable = <T extends Record<string, any>>({
           <TableHeader>
             <TableRow>
               {columns.map((column, idx) => (
-                <TableHead key={idx}>{column.header}</TableHead>
+                <TableHead key={idx}>{renderHeader(column.header)}</TableHead>
               ))}
             </TableRow>
           </TableHeader>

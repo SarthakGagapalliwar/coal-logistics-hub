@@ -181,9 +181,12 @@ const UserManagement = () => {
   }
 
   const mobileColumns = isMobile
-    ? columns.filter((col) =>
-        ['Name', 'Email', 'Role', 'Actions'].includes(col.header as string)
-      )
+    ? columns.filter((col) => {
+        if (typeof col.header === 'string') {
+          return ['Name', 'Email', 'Role', 'Actions'].includes(col.header);
+        }
+        return false;
+      })
     : columns;
 
   return (

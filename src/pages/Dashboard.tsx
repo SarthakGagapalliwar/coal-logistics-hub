@@ -87,9 +87,12 @@ const Dashboard = () => {
 
   // For mobile, show fewer columns
   const mobileShipmentColumns = isMobile
-    ? shipmentColumns.filter((col) =>
-        ["ID", "Transporter"].includes(col.header)
-      )
+    ? shipmentColumns.filter((col) => {
+        if (typeof col.header === 'string') {
+          return ["ID", "Transporter"].includes(col.header);
+        }
+        return false;
+      })
     : shipmentColumns;
 
   // Get recent shipments (last 5)

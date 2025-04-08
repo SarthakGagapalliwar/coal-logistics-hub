@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -97,9 +96,13 @@ const Transporters = () => {
     });
   }
 
-  
   const mobileColumns = isMobile
-    ? columns.filter((col) => ["ID", "Name", "Actions"].includes(col.header))
+    ? columns.filter((col) => {
+        if (typeof col.header === 'string') {
+          return ["ID", "Name", "Actions"].includes(col.header);
+        }
+        return false;
+      })
     : columns;
 
   return (
