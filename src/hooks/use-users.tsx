@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { usePackages, fetchPackages } from '@/hooks/use-packages';
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   email: string;
   role: string;
   active: boolean;
+  assignedPackages?: string[];
 }
 
 interface UserFormData {
@@ -17,6 +19,7 @@ interface UserFormData {
   email: string;
   role: string;
   password: string;
+  assignedPackages: string[];
 }
 
 export const useUsers = () => {
@@ -28,6 +31,13 @@ export const useUsers = () => {
     email: '',
     role: 'user',
     password: '',
+    assignedPackages: [],
+  });
+
+  // Query to fetch packages 
+  const { data: availablePackages = [], isLoading: isLoadingPackages } = useQuery({
+    queryKey: ['packages'],
+    queryFn: fetchPackages,
   });
 
   // Query to fetch users from profiles table
@@ -52,7 +62,8 @@ export const useUsers = () => {
           username: profile.username,
           email: profile.email || '', // If email is stored in profiles, use it
           role: profile.role,
-          active: profile.active
+          active: profile.active,
+          assignedPackages: profile.assigned_packages || []
         }));
         
         return userProfiles as User[];
@@ -79,6 +90,19 @@ export const useUsers = () => {
       });
       
       if (authError) throw authError;
+
+      // After successful signup, assign packages if any
+      if (userData.assignedPackages.length > 0 && authData.user) {
+        const { error } = await supabase.rpc('assign_packages_to_user', {
+          user_id: authData.user.id,
+          package_ids: userData.assignedPackages
+        });
+        
+        if (error) {
+          console.error('Error assigning packages:', error);
+          throw error;
+        }
+      }
       
       return authData;
     },
@@ -95,7 +119,7 @@ export const useUsers = () => {
 
   // Mutation to update a user
   const updateUserMutation = useMutation({
-    mutationFn: async (user: User) => {
+    mutationFn: async (user: User & { assignedPackages?: string[] }) => {
       // Update user in the profiles table
       const { error } = await supabase
         .from('profiles')
@@ -107,6 +131,19 @@ export const useUsers = () => {
         .eq('id', user.id);
       
       if (error) throw error;
+
+      // Update assigned packages
+      if (user.assignedPackages) {
+        const { error: packageError } = await supabase.rpc('assign_packages_to_user', {
+          user_id: user.id,
+          package_ids: user.assignedPackages
+        });
+        
+        if (packageError) {
+          console.error('Error assigning packages:', packageError);
+          throw packageError;
+        }
+      }
       
       return user;
     },
@@ -151,6 +188,11 @@ export const useUsers = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle package selection changes
+  const handlePackageSelectionChange = (selectedPackageIds: string[]) => {
+    setFormData(prev => ({ ...prev, assignedPackages: selectedPackageIds }));
+  };
+
   // Set up to edit a user
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
@@ -159,6 +201,7 @@ export const useUsers = () => {
       email: user.email,
       role: user.role,
       password: '', // Password field will be disabled in edit mode
+      assignedPackages: user.assignedPackages || [],
     });
     setOpenDialog(true);
   };
@@ -177,6 +220,7 @@ export const useUsers = () => {
       email: '',
       role: 'user',
       password: '',
+      assignedPackages: [],
     });
   };
 
@@ -190,6 +234,7 @@ export const useUsers = () => {
         ...selectedUser,
         username: formData.name,
         role: formData.role,
+        assignedPackages: formData.assignedPackages,
       });
     } else {
       // Add new user
@@ -214,5 +259,8 @@ export const useUsers = () => {
     updateUserMutation,
     addUserMutation,
     isSubmitting: addUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending,
+    availablePackages,
+    isLoadingPackages,
+    handlePackageSelectionChange,
   };
 };

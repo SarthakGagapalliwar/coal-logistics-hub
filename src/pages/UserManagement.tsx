@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -36,6 +37,7 @@ import {
   Mail,
   CheckCircle,
   XCircle,
+  Package,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -62,6 +64,9 @@ const UserManagement = () => {
     updateUserMutation,
     addUserMutation,
     isSubmitting,
+    availablePackages,
+    isLoadingPackages,
+    handlePackageSelectionChange,
   } = useUsers();
 
   const isMobile = useIsMobile();
@@ -84,14 +89,22 @@ const UserManagement = () => {
     setSelectedUsers([]);
   };
 
+  const handleCheckboxChange = (packageId: string, checked: boolean) => {
+    if (checked) {
+      handlePackageSelectionChange([...formData.assignedPackages, packageId]);
+    } else {
+      handlePackageSelectionChange(formData.assignedPackages.filter(id => id !== packageId));
+    }
+  };
+
   const columns: Column[] = [
     {
       header: 'Name',
-      accessorKey: 'username', // Changed from 'name' to 'username'
+      accessorKey: 'username',
       cell: (row: any) => (
         <div className="flex items-center space-x-2">
           <User className="h-4 w-4" />
-          <span>{row.username}</span> {/* Changed from row.name to row.username */}
+          <span>{row.username}</span>
         </div>
       ),
     },
@@ -111,10 +124,10 @@ const UserManagement = () => {
     },
     {
       header: 'Status',
-      accessorKey: 'active', // Changed from 'is_active' to 'active'
+      accessorKey: 'active',
       cell: (row: any) => (
         <div className="flex items-center space-x-2">
-          {row.active ? ( // Changed from row.is_active to row.active
+          {row.active ? (
             <>
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span>Active</span>
@@ -128,6 +141,16 @@ const UserManagement = () => {
         </div>
       ),
     },
+    {
+      header: 'Packages',
+      accessorKey: 'assignedPackages',
+      cell: (row: any) => (
+        <div className="flex items-center space-x-2">
+          <Package className="h-4 w-4" />
+          <span>{row.assignedPackages?.length || 0}</span>
+        </div>
+      ),
+    },
   ];
 
   if (isAdmin) {
@@ -136,11 +159,9 @@ const UserManagement = () => {
       header: ({ table }) => (
         <input
           type="checkbox"
-          checked={false} // Using a fixed value instead of depending on table methods
+          checked={false}
           onChange={(event) => {
-            // Simplified handling without table methods
             const isChecked = event.target.checked;
-            // We would select all users on the current page
             if (isChecked) {
               const allUserIds = users.map(user => user.id);
               setSelectedUsers(allUserIds);
@@ -239,7 +260,7 @@ const UserManagement = () => {
                 <DataTable
                   data={users}
                   columns={mobileColumns}
-                  searchKey="username" // Changed from 'name' to 'username'
+                  searchKey="username"
                   searchPlaceholder="Search users..."
                 />
               )}
@@ -325,6 +346,39 @@ const UserManagement = () => {
                       Password cannot be changed for existing users.
                     </p>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Assigned Packages</Label>
+                  <div className="border rounded-md p-3 h-40 overflow-y-auto">
+                    {isLoadingPackages ? (
+                      <div className="flex justify-center py-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      </div>
+                    ) : availablePackages.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No packages available</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {availablePackages.map((pkg) => (
+                          <div key={pkg.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`package-${pkg.id}`}
+                              checked={formData.assignedPackages.includes(pkg.id)}
+                              onCheckedChange={(checked) => 
+                                handleCheckboxChange(pkg.id, checked === true)
+                              }
+                            />
+                            <label 
+                              htmlFor={`package-${pkg.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {pkg.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <DialogFooter>
