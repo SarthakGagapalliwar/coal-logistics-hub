@@ -30,44 +30,36 @@ export const useUsers = () => {
     password: '',
   });
 
-  // Query to fetch users from profiles table and auth.users
+  // Query to fetch users from profiles table
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      // Get profiles with roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
-      }
-      
-      // Get emails from auth.users through the function
-      const userProfiles = [];
-      
-      for (const profile of profiles) {
-        // Get email from auth.users using the function
-        const { data: emailData, error: emailError } = await supabase
-          .rpc('get_user_email', { user_id: profile.id });
+      try {
+        // Get profiles with roles
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
         
-        if (emailError) {
-          console.error('Error fetching email:', emailError);
-          continue;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
         }
         
-        userProfiles.push({
+        // Transform the profiles data
+        const userProfiles = profiles.map(profile => ({
           id: profile.id,
           username: profile.username,
-          email: emailData && emailData.length > 0 ? emailData[0].email : '',
+          email: profile.email || '', // If email is stored in profiles, use it
           role: profile.role,
           active: profile.active
-        });
+        }));
+        
+        return userProfiles as User[];
+      } catch (error) {
+        console.error('Error in user fetching:', error);
+        throw error;
       }
-      
-      return userProfiles as User[];
     },
   });
 
