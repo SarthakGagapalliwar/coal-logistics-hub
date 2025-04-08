@@ -6,10 +6,10 @@ import { toast } from 'sonner';
 
 interface User {
   id: string;
-  name: string;
+  username: string;
   email: string;
   role: string;
-  is_active: boolean;
+  active: boolean;
 }
 
 interface UserFormData {
@@ -30,21 +30,44 @@ export const useUsers = () => {
     password: '',
   });
 
-  // Query to fetch users
+  // Query to fetch users from profiles table and auth.users
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
+      // Get profiles with roles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching users:', error);
-        throw error;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
       }
       
-      return data as User[];
+      // Get emails from auth.users through the function
+      const userProfiles = [];
+      
+      for (const profile of profiles) {
+        // Get email from auth.users using the function
+        const { data: emailData, error: emailError } = await supabase
+          .rpc('get_user_email', { user_id: profile.id });
+        
+        if (emailError) {
+          console.error('Error fetching email:', emailError);
+          continue;
+        }
+        
+        userProfiles.push({
+          id: profile.id,
+          username: profile.username,
+          email: emailData && emailData.length > 0 ? emailData[0].email : '',
+          role: profile.role,
+          active: profile.active
+        });
+      }
+      
+      return userProfiles as User[];
     },
   });
 
@@ -57,7 +80,7 @@ export const useUsers = () => {
         password: userData.password,
         options: {
           data: {
-            name: userData.name,
+            username: userData.name,
             role: userData.role,
           },
         },
@@ -81,12 +104,13 @@ export const useUsers = () => {
   // Mutation to update a user
   const updateUserMutation = useMutation({
     mutationFn: async (user: User) => {
-      // Update user in the database
+      // Update user in the profiles table
       const { error } = await supabase
-        .from('users')
+        .from('profiles')
         .update({
-          name: user.name,
+          username: user.username,
           role: user.role,
+          active: user.active
         })
         .eq('id', user.id);
       
@@ -139,7 +163,7 @@ export const useUsers = () => {
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setFormData({
-      name: user.name,
+      name: user.username,
       email: user.email,
       role: user.role,
       password: '', // Password field will be disabled in edit mode
@@ -172,7 +196,7 @@ export const useUsers = () => {
       // Update existing user
       updateUserMutation.mutate({
         ...selectedUser,
-        name: formData.name,
+        username: formData.name,
         role: formData.role,
       });
     } else {

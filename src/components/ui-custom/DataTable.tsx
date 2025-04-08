@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Table,
@@ -52,10 +51,17 @@ const DataTable = <T extends Record<string, any>>({
     setCurrentPage(page);
   };
 
+  // Create a mock table object for header functions
+  const mockTableContext = {
+    getIsAllPageRowsSelected: () => false,
+    toggleAllPageRowsSelected: () => {},
+    getRowModel: () => ({ rows: [] }),
+  };
+
   // Helper function to render the header content based on its type
-  const renderHeader = (header: Column['header'], table?: any) => {
+  const renderHeader = (header: Column['header']) => {
     if (typeof header === 'function') {
-      return header({ table });
+      return header({ table: mockTableContext });
     }
     return header;
   };

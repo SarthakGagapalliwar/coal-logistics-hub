@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
@@ -86,11 +87,11 @@ const UserManagement = () => {
   const columns: Column[] = [
     {
       header: 'Name',
-      accessorKey: 'name',
+      accessorKey: 'username', // Changed from 'name' to 'username'
       cell: (row: any) => (
         <div className="flex items-center space-x-2">
           <User className="h-4 w-4" />
-          <span>{row.name}</span>
+          <span>{row.username}</span> {/* Changed from row.name to row.username */}
         </div>
       ),
     },
@@ -110,10 +111,10 @@ const UserManagement = () => {
     },
     {
       header: 'Status',
-      accessorKey: 'is_active',
+      accessorKey: 'active', // Changed from 'is_active' to 'active'
       cell: (row: any) => (
         <div className="flex items-center space-x-2">
-          {row.is_active ? (
+          {row.active ? ( // Changed from row.is_active to row.active
             <>
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span>Active</span>
@@ -135,11 +136,13 @@ const UserManagement = () => {
       header: ({ table }) => (
         <input
           type="checkbox"
-          checked={table.getIsAllPageRowsSelected()}
+          checked={false} // Using a fixed value instead of depending on table methods
           onChange={(event) => {
-            table.toggleAllPageRowsSelected(event.target.checked);
-            if (event.target.checked) {
-              const allUserIds = table.getRowModel().rows.map((row: any) => row.original.id);
+            // Simplified handling without table methods
+            const isChecked = event.target.checked;
+            // We would select all users on the current page
+            if (isChecked) {
+              const allUserIds = users.map(user => user.id);
               setSelectedUsers(allUserIds);
             } else {
               setSelectedUsers([]);
@@ -148,13 +151,12 @@ const UserManagement = () => {
           className="translate-y-[2px] rounded-sm"
         />
       ),
-      cell: ({ row }) => (
+      cell: (row) => (
         <input
           type="checkbox"
-          checked={row.getIsSelected()}
+          checked={selectedUsers.includes(row.id)}
           onChange={(event) => {
-            row.toggleSelected(event.target.checked);
-            handleSelectUser(row.original.id, event.target.checked);
+            handleSelectUser(row.id, event.target.checked);
           }}
           className="translate-y-[2px] rounded-sm"
         />
@@ -166,7 +168,7 @@ const UserManagement = () => {
     columns.push({
       header: 'Actions',
       accessorKey: 'actions',
-      cell: (row: any) => (
+      cell: (row) => (
         <div className="flex space-x-2">
           <Button
             variant="outline"
@@ -237,7 +239,7 @@ const UserManagement = () => {
                 <DataTable
                   data={users}
                   columns={mobileColumns}
-                  searchKey="name"
+                  searchKey="username" // Changed from 'name' to 'username'
                   searchPlaceholder="Search users..."
                 />
               )}
@@ -279,7 +281,13 @@ const UserManagement = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
+                      disabled={!!selectedUser}
                     />
+                    {selectedUser && (
+                      <p className="text-xs text-muted-foreground">
+                        Email cannot be changed for existing users.
+                      </p>
+                    )}
                   </div>
                 </div>
 
