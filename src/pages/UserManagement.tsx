@@ -87,11 +87,11 @@ const UserManagement = () => {
   const columns: Column[] = [
     {
       header: 'Name',
-      accessorKey: 'name',
+      accessorKey: 'username', // Changed from 'name' to 'username'
       cell: (row: any) => (
         <div className="flex items-center space-x-2">
           <User className="h-4 w-4" />
-          <span>{row.name}</span>
+          <span>{row.username}</span> {/* Changed from row.name to row.username */}
         </div>
       ),
     },
@@ -111,10 +111,10 @@ const UserManagement = () => {
     },
     {
       header: 'Status',
-      accessorKey: 'is_active',
+      accessorKey: 'active', // Changed from 'is_active' to 'active'
       cell: (row: any) => (
         <div className="flex items-center space-x-2">
-          {row.is_active ? (
+          {row.active ? ( // Changed from row.is_active to row.active
             <>
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span>Active</span>
@@ -239,7 +239,7 @@ const UserManagement = () => {
                 <DataTable
                   data={users}
                   columns={mobileColumns}
-                  searchKey="name"
+                  searchKey="username" // Changed from 'name' to 'username'
                   searchPlaceholder="Search users..."
                 />
               )}
@@ -281,7 +281,13 @@ const UserManagement = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
+                      disabled={!!selectedUser}
                     />
+                    {selectedUser && (
+                      <p className="text-xs text-muted-foreground">
+                        Email cannot be changed for existing users.
+                      </p>
+                    )}
                   </div>
                 </div>
 
