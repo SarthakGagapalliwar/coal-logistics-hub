@@ -1,12 +1,13 @@
-
-import { ColumnDef } from "@tanstack/react-table";
 import { ReactNode } from "react";
 
 // Base interface for the column definition
 export interface Column {
-  header: string;
-  accessorKey: string;
+  header: string | ReactNode | (({ table }: { table: any }) => ReactNode);
+  accessorKey?: string;
+  id?: string;
   cell?: (props: any) => ReactNode;
+  enableSorting?: boolean;
+  enableHiding?: boolean;
 }
 
 // Column definition for the data table

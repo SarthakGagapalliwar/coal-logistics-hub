@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
@@ -133,16 +132,14 @@ const UserManagement = () => {
   if (isAdmin) {
     columns.unshift({
       id: 'select',
-      header: ({ table }: { table: any }) => (
+      header: ({ table }) => (
         <input
           type="checkbox"
           checked={table.getIsAllPageRowsSelected()}
           onChange={(event) => {
             table.toggleAllPageRowsSelected(event.target.checked);
             if (event.target.checked) {
-              const allUserIds = table
-                .getRowModel()
-                .rows.map((row: any) => row.original.id);
+              const allUserIds = table.getRowModel().rows.map((row: any) => row.original.id);
               setSelectedUsers(allUserIds);
             } else {
               setSelectedUsers([]);
@@ -151,7 +148,7 @@ const UserManagement = () => {
           className="translate-y-[2px] rounded-sm"
         />
       ),
-      cell: ({ row }: { row: any }) => (
+      cell: ({ row }) => (
         <input
           type="checkbox"
           checked={row.getIsSelected()}
@@ -163,7 +160,7 @@ const UserManagement = () => {
         />
       ),
       enableSorting: false,
-      enableHiding: false,
+      enableHiding: false
     });
 
     columns.push({
