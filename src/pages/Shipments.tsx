@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -163,7 +164,7 @@ const Shipments = () => {
 
   const mobileColumns = isMobile
     ? columns.filter((col) =>
-        ["Source", "Destination", "Actions"].includes(col.header)
+        ["Source", "Destination", "Actions"].includes(col.header as string)
       )
     : columns;
 
@@ -465,6 +466,7 @@ const Shipments = () => {
                     type="button"
                     variant="outline"
                     onClick={() => setOpenDialog(false)}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>

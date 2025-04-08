@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PageTransition from '@/components/ui-custom/PageTransition';
@@ -60,6 +61,7 @@ const UserManagement = () => {
     deleteUserMutation,
     updateUserMutation,
     addUserMutation,
+    isSubmitting,
   } = useUsers();
 
   const isMobile = useIsMobile();
@@ -131,7 +133,7 @@ const UserManagement = () => {
   if (isAdmin) {
     columns.unshift({
       id: 'select',
-      header: ({ table }) => (
+      header: ({ table }: { table: any }) => (
         <input
           type="checkbox"
           checked={table.getIsAllPageRowsSelected()}
@@ -140,7 +142,7 @@ const UserManagement = () => {
             if (event.target.checked) {
               const allUserIds = table
                 .getRowModel()
-                .rows.map((row) => row.original.id);
+                .rows.map((row: any) => row.original.id);
               setSelectedUsers(allUserIds);
             } else {
               setSelectedUsers([]);
@@ -149,7 +151,7 @@ const UserManagement = () => {
           className="translate-y-[2px] rounded-sm"
         />
       ),
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <input
           type="checkbox"
           checked={row.getIsSelected()}
@@ -183,11 +185,9 @@ const UserManagement = () => {
 
   const mobileColumns = isMobile
     ? columns.filter((col) =>
-        ['Name', 'Email', 'Role', 'Actions'].includes(col.header)
+        ['Name', 'Email', 'Role', 'Actions'].includes(col.header as string)
       )
     : columns;
-
-  const isSubmitting = addUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending;
 
   return (
     <DashboardLayout>
