@@ -115,7 +115,7 @@ const RoutesPage = () => {
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             size="icon"
             className="text-destructive hover:text-destructive"
@@ -123,7 +123,7 @@ const RoutesPage = () => {
             disabled={isDeleting}
           >
             <Trash className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       ),
     });
@@ -132,8 +132,10 @@ const RoutesPage = () => {
   // For mobile, show fewer columns
   const mobileColumns = isMobile
     ? columns.filter((col) => {
-        if (typeof col.header === 'string') {
-          return ["ID", "Origin", "Destination", "Actions"].includes(col.header);
+        if (typeof col.header === "string") {
+          return ["ID", "Origin", "Destination", "Actions"].includes(
+            col.header
+          );
         }
         return false;
       })
