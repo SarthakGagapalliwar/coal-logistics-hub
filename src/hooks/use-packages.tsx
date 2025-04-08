@@ -109,6 +109,8 @@ export const usePackages = () => {
         created_by_id: user.id
       };
       
+      console.log("Adding package with data:", packageData);
+      
       const { data, error } = await supabase
         .from('packages')
         .insert(packageData)
@@ -136,16 +138,24 @@ export const usePackages = () => {
     mutationFn: async (packageData: Partial<Package> & { id: string }) => {
       const { id, ...rest } = packageData;
       
+      // Convert to DB format for the update operation
+      const dbData = {
+        name: rest.name
+      };
+      
+      console.log("Updating package with ID:", id, "Data:", dbData);
+      
       const { error } = await supabase
         .from('packages')
-        .update(appToDbPackage(rest))
+        .update(dbData)
         .eq('id', id);
       
       if (error) {
+        console.error("Error updating package:", error);
         throw new Error(error.message);
       }
       
-      return packageData;
+      return { id, ...rest };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['packages'] });
@@ -183,6 +193,7 @@ export const usePackages = () => {
 
   // Handle edit package
   const handleEditPackage = (pkg: Package) => {
+    console.log("Setting selected package for edit:", pkg);
     setSelectedPackage(pkg);
     setOpenDialog(true);
   };
