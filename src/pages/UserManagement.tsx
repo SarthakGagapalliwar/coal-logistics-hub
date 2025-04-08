@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { toast } from "sonner";
@@ -460,7 +461,11 @@ const UserManagement = () => {
                             <Checkbox 
                               id={`create-package-${pkg.id}`}
                               checked={formData.assigned_packages.includes(pkg.id)}
-                              onCheckedChange={(checked) => handlePackageCheckboxChange(pkg.id, checked === true)}
+                              onCheckedChange={(checked) => {
+                                if (typeof checked === "boolean") {
+                                  handlePackageCheckboxChange(pkg.id, checked);
+                                }
+                              }}
                             />
                             <label 
                               htmlFor={`create-package-${pkg.id}`}
@@ -587,7 +592,11 @@ const UserManagement = () => {
                         <Checkbox 
                           id={`edit-package-${pkg.id}`}
                           checked={editFormData.assigned_packages.includes(pkg.id)}
-                          onCheckedChange={(checked) => handleEditPackageCheckboxChange(pkg.id, checked === true)}
+                          onCheckedChange={(checked) => {
+                            if (typeof checked === "boolean") {
+                              handleEditPackageCheckboxChange(pkg.id, checked);
+                            }
+                          }}
                         />
                         <label 
                           htmlFor={`edit-package-${pkg.id}`}

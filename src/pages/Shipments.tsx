@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import DataTable from "@/components/ui-custom/DataTable";
@@ -31,7 +31,6 @@ import {
 import {
   Plus,
   Edit,
-  Trash,
   MapPin,
   Truck,
   Weight,
@@ -45,7 +44,6 @@ import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
 import { formatCurrency } from "@/lib/data";
-import { usePackages } from "@/hooks/use-packages";
 
 const Shipments = () => {
   const {
@@ -61,9 +59,6 @@ const Shipments = () => {
     handleEditShipment,
     handleAddShipment,
     handleSubmit,
-    handleDeleteShipment,
-    isSubmitting,
-    isDeleting,
     transporters,
     vehicles,
     routes,
@@ -160,15 +155,6 @@ const Shipments = () => {
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDeleteShipment(row.id)}
-            disabled={isDeleting}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
         </div>
       ),
     });
@@ -235,7 +221,6 @@ const Shipments = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Package Selection - Moved to the top */}
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="packageId">Assign to Package</Label>
                     <div className="relative">

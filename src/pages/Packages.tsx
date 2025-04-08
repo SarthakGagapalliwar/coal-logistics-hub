@@ -9,23 +9,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import DataTable from "@/components/ui-custom/DataTable";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { usePackages } from "@/hooks/use-packages";
 import PackageForm from "@/components/packages/PackageForm";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const Packages = () => {
   const { user } = useAuth();
@@ -37,14 +27,9 @@ const Packages = () => {
     setOpenDialog, 
     selectedPackage, 
     handleAddPackage, 
-    handleEditPackage, 
-    handleDeletePackage,
-    isDeleting
+    handleEditPackage,
   } = usePackages();
   
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [packageToDelete, setPackageToDelete] = useState<string | null>(null);
-
   const columns = [
     { header: "Name", accessorKey: "name" },
     {
@@ -55,19 +40,6 @@ const Packages = () => {
           <Button variant="ghost" size="icon" onClick={() => handleEditPackage(row)}>
             <Pencil className="h-4 w-4" />
           </Button>
-          {isAdmin && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-destructive"
-              onClick={() => {
-                setPackageToDelete(row.id);
-                setShowDeleteAlert(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       ),
     },
@@ -121,32 +93,6 @@ const Packages = () => {
               <PackageForm />
             </DialogContent>
           </Dialog>
-
-          <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  package from our servers.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    if (packageToDelete) {
-                      handleDeletePackage(packageToDelete);
-                    }
-                  }}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground"
-                >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </PageTransition>
     </DashboardLayout>

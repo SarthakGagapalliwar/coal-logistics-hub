@@ -25,13 +25,11 @@ import {
 import {
   Plus,
   Edit,
-  Trash,
   User,
   Phone,
   MapPin,
   Building,
   FileText,
-  University,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransporters } from "@/hooks/use-transporters";
@@ -50,9 +48,7 @@ const Transporters = () => {
     handleEditTransporter,
     handleAddTransporter,
     handleSubmit,
-    handleDeleteTransporter,
     isSubmitting,
-    isDeleting,
   } = useTransporters();
 
   const isMobile = useIsMobile();
@@ -95,15 +91,6 @@ const Transporters = () => {
             onClick={() => handleEditTransporter(row)}
           >
             <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDeleteTransporter(row.id)}
-            disabled={isDeleting}
-          >
-            <Trash className="h-4 w-4" />
           </Button>
         </div>
       ),

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -29,7 +28,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Edit, Trash, Truck, Calendar } from "lucide-react";
+import { Plus, Edit, Truck, Calendar } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format } from "date-fns";
 import { useVehicles } from "@/hooks/use-vehicles";
@@ -48,9 +47,7 @@ const Vehicles = () => {
     handleEditVehicle,
     handleAddVehicle,
     handleSubmit,
-    handleDeleteVehicle,
     isSubmitting,
-    isDeleting,
     transporters,
   } = useVehicles();
 
@@ -127,15 +124,6 @@ const Vehicles = () => {
             onClick={() => handleEditVehicle(row)}
           >
             <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDeleteVehicle(row.id)}
-            disabled={isDeleting}
-          >
-            <Trash className="h-4 w-4" />
           </Button>
         </div>
       ),
