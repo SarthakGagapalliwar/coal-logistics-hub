@@ -351,6 +351,10 @@ export type Database = {
       }
     }
     Functions: {
+      assign_packages_to_user: {
+        Args: { user_id: string; package_ids: string[] }
+        Returns: undefined
+      }
       delete_user: {
         Args: { user_id: string }
         Returns: undefined
