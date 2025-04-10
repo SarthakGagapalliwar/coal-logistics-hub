@@ -75,31 +75,31 @@ const AppRoutes = () => {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/signin" element={<SignIn />} />
       <Route path="/inactive" element={<InactivePage />} />
-      
+
       <Route path="/dashboard" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <Dashboard />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
       <Route path="/transporters" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <Transporters />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
       <Route path="/vehicles" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <Vehicles />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
       <Route path="/packages" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <Packages />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
       <Route path="/routes" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <RoutesPage />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
       <Route path="/shipments" element={
         <ProtectedRoute>
@@ -116,13 +116,12 @@ const AppRoutes = () => {
           <Settings />
         </ProtectedRoute>
       } />
-      
       <Route path="/users" element={
         <AdminRoute>
           <UserManagement />
         </AdminRoute>
       } />
-      
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
