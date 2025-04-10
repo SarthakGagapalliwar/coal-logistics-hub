@@ -359,6 +359,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: undefined
       }
+      toggle_user_access: {
+        Args: { user_id: string; is_active: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

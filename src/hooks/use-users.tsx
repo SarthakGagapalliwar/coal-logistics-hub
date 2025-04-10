@@ -158,22 +158,24 @@ export const useUsers = () => {
     },
   });
 
-  // Mutation to delete a user
-  const deleteUserMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      // Delete user using RPC function
-      const { error } = await supabase.rpc('delete_user', { user_id: userId });
+  // Mutation to toggle user access
+  const toggleUserAccessMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      const { error } = await supabase.rpc('toggle_user_access', {
+        user_id: userId,
+        is_active: isActive
+      });
       
       if (error) throw error;
       
-      return userId;
+      return { userId, isActive };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User deleted successfully');
+      toast.success(`User ${data.isActive ? 'activated' : 'deactivated'} successfully`);
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete user: ${error.message}`);
+      toast.error(`Failed to update user access: ${error.message}`);
     },
   });
 
@@ -242,6 +244,14 @@ export const useUsers = () => {
     }
   };
 
+  // Handle toggling user access
+  const handleToggleUserAccess = (user: User) => {
+    toggleUserAccessMutation.mutate({
+      userId: user.id,
+      isActive: !user.active
+    });
+  };
+
   return {
     users,
     isLoading,
@@ -255,10 +265,11 @@ export const useUsers = () => {
     handleEditUser,
     handleAddUser,
     handleSubmit,
-    deleteUserMutation,
+    toggleUserAccessMutation,
+    handleToggleUserAccess,
     updateUserMutation,
     addUserMutation,
-    isSubmitting: addUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending,
+    isSubmitting: addUserMutation.isPending || updateUserMutation.isPending || toggleUserAccessMutation.isPending,
     availablePackages,
     isLoadingPackages,
     handlePackageSelectionChange,

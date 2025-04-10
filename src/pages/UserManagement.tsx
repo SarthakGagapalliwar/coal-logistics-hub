@@ -32,12 +32,14 @@ import {
 import {
   Plus,
   Edit,
-  Trash,
   User,
   Mail,
   CheckCircle,
   XCircle,
   Package,
+  ToggleLeft,
+  ToggleRight,
+  Shield
 } from 'lucide-react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,7 +62,8 @@ const UserManagement = () => {
     handleEditUser,
     handleAddUser,
     handleSubmit,
-    deleteUserMutation,
+    toggleUserAccessMutation,
+    handleToggleUserAccess,
     updateUserMutation,
     addUserMutation,
     isSubmitting,
@@ -80,13 +83,6 @@ const UserManagement = () => {
     } else {
       setSelectedUsers((prev) => prev.filter(id => id !== userId));
     }
-  };
-
-  const handleDeleteSelected = () => {
-    selectedUsers.forEach((userId) => {
-      deleteUserMutation.mutate(userId);
-    });
-    setSelectedUsers([]);
   };
 
   const handleCheckboxChange = (packageId: string, checked: boolean) => {
@@ -121,6 +117,12 @@ const UserManagement = () => {
     {
       header: 'Role',
       accessorKey: 'role',
+      cell: (row: any) => (
+        <div className="flex items-center space-x-2">
+          <Shield className="h-4 w-4" />
+          <span className="capitalize">{row.role}</span>
+        </div>
+      ),
     },
     {
       header: 'Status',
@@ -195,8 +197,21 @@ const UserManagement = () => {
             variant="outline"
             size="icon"
             onClick={() => handleEditUser(row)}
+            title="Edit user"
           >
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={row.active ? "outline" : "secondary"}
+            size="icon"
+            onClick={() => handleToggleUserAccess(row)}
+            title={row.active ? "Deactivate user" : "Activate user"}
+          >
+            {row.active ? (
+              <ToggleRight className="h-4 w-4" />
+            ) : (
+              <ToggleLeft className="h-4 w-4" />
+            )}
           </Button>
         </div>
       ),
@@ -206,7 +221,7 @@ const UserManagement = () => {
   const mobileColumns = isMobile
     ? columns.filter((col) => {
         if (typeof col.header === 'string') {
-          return ['Name', 'Email', 'Role', 'Actions'].includes(col.header);
+          return ['Name', 'Email', 'Status', 'Actions'].includes(col.header);
         }
         return false;
       })
@@ -230,13 +245,6 @@ const UserManagement = () => {
             </div>
             {isAdmin && (
               <div className="flex space-x-2">
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteSelected}
-                  disabled={selectedUsers.length === 0 || isSubmitting}
-                >
-                  <Trash className="mr-2 h-4 w-4" /> Delete Selected
-                </Button>
                 <Button onClick={handleAddUser} disabled={isSubmitting}>
                   <Plus className="mr-2 h-4 w-4" /> Add User
                 </Button>
@@ -329,24 +337,43 @@ const UserManagement = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required={!selectedUser}
-                    disabled={!!selectedUser}
-                  />
-                  {selectedUser && (
-                    <p className="text-xs text-muted-foreground">
-                      Password cannot be changed for existing users.
-                    </p>
-                  )}
-                </div>
+                {!selectedUser && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Enter password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                )}
+
+                {selectedUser && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Account Status</Label>
+                    <Select
+                      value={selectedUser.active ? "active" : "inactive"}
+                      onValueChange={(value) => {
+                        setSelectedUser({
+                          ...selectedUser,
+                          active: value === "active"
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Assigned Packages</Label>
