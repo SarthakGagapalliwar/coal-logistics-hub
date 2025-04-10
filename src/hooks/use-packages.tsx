@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -145,17 +144,18 @@ export const usePackages = () => {
       
       console.log("Updating package with ID:", id, "Data:", dbData);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('packages')
         .update(dbData)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) {
         console.error("Error updating package:", error);
         throw new Error(error.message);
       }
       
-      return { id, ...rest };
+      return data && data[0] ? dbToAppPackage(data[0] as DbPackage) : packageData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['packages'] });

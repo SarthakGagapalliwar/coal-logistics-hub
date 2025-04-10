@@ -68,7 +68,7 @@ const Navbar: React.FC = () => {
 
   if (!user) return null;
 
-  const navItems = [
+  const adminItems = [
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
     { to: '/vehicles', icon: <Truck size={20} />, label: 'Vehicles' },
@@ -77,15 +77,16 @@ const Navbar: React.FC = () => {
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
     { to: '/settings', icon: <Settings size={20} />, label: 'Settings' },
-  ];
-
-  const adminItems = [
     { to: '/users', icon: <Users size={20} />, label: 'User Management' },
   ];
 
-  const items = user.role === 'admin' 
-    ? [...navItems, ...adminItems] 
-    : navItems;
+  const userItems = [
+    { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
+    { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
+    { to: '/settings', icon: <Settings size={20} />, label: 'Settings' },
+  ];
+
+  const items = user.role === 'admin' ? adminItems : userItems;
 
   return (
     <>
