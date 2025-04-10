@@ -46,19 +46,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   const menuItems = [
     {
-      icon: <Home className="w-5 h-5" />,
-      label: "Dashboard",
-      path: "/dashboard",
-    },
-    {
-      icon: <TruckIcon className="w-5 h-5" />,
-      label: "Transporters",
-      path: "/transporters",
-    },
-    { icon: <Car className="w-5 h-5" />, label: "Vehicles", path: "/vehicles" },
-    { icon: <Box className="w-5 h-5" />, label: "Packages", path: "/packages" },
-    { icon: <Route className="w-5 h-5" />, label: "Routes", path: "/routes" },
-    {
       icon: <Package className="w-5 h-5" />,
       label: "Shipments",
       path: "/shipments",
@@ -75,6 +62,31 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     },
     ...(user?.role === "admin"
       ? [
+          {
+            icon: <Home className="w-5 h-5" />,
+            label: "Dashboard",
+            path: "/dashboard",
+          },
+          {
+            icon: <TruckIcon className="w-5 h-5" />,
+            label: "Transporters",
+            path: "/transporters",
+          },
+          {
+            icon: <Car className="w-5 h-5" />,
+            label: "Vehicles",
+            path: "/vehicles",
+          },
+          {
+            icon: <Box className="w-5 h-5" />,
+            label: "Packages",
+            path: "/packages",
+          },
+          {
+            icon: <Route className="w-5 h-5" />,
+            label: "Routes",
+            path: "/routes",
+          },
           {
             icon: <User className="w-5 h-5" />,
             label: "User Management",
