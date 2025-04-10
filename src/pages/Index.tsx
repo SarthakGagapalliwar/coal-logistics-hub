@@ -20,7 +20,7 @@ const Index = () => {
         <div>
           {user ? (
             <Button asChild>
-              <Link to="/dashboard">Go to Dashboard</Link>
+              <Link to="/shipments">Go to Shipments</Link>
             </Button>
           ) : (
             <div className="flex gap-4">
@@ -66,8 +66,8 @@ const Index = () => {
           >
             {user ? (
               <Button asChild size="lg">
-                <Link to="/dashboard">
-                  Go to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+                <Link to="/shipments">
+                  Go to Shipments <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
             ) : (

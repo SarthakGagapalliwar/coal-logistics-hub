@@ -22,7 +22,7 @@ const SignUp = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/shipments');
     }
   }, [user, navigate]);
 

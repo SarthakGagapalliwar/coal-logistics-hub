@@ -53,7 +53,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!user || user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/shipments" replace />;
   }
   
   return <>{children}</>;

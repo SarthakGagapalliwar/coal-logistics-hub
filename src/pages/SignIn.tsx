@@ -21,7 +21,7 @@ const SignIn = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/shipments');
     }
   }, [user, navigate]);
 
@@ -51,7 +51,7 @@ const SignIn = () => {
 
       const success = await login(formData.email.toLowerCase(), formData.password);
       if (success) {
-        navigate('/dashboard');
+        navigate('/shipments');
       } else {
         toast.error('Invalid email or password. Please try again.');
       }
