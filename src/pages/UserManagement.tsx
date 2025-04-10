@@ -55,6 +55,7 @@ const UserManagement = () => {
     openDialog,
     setOpenDialog,
     selectedUser,
+    setSelectedUser,
     formData,
     setFormData,
     handleInputChange,
@@ -358,10 +359,12 @@ const UserManagement = () => {
                     <Select
                       value={selectedUser.active ? "active" : "inactive"}
                       onValueChange={(value) => {
-                        setSelectedUser({
-                          ...selectedUser,
-                          active: value === "active"
-                        });
+                        if (selectedUser) {  // Add a check to ensure selectedUser exists
+                          setSelectedUser({
+                            ...selectedUser,
+                            active: value === "active"
+                          });
+                        }
                       }}
                     >
                       <SelectTrigger>
