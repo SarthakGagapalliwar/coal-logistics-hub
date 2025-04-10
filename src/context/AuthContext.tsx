@@ -12,6 +12,7 @@ export interface AuthUser {
   username: string;
   role: UserRole;
   email?: string;
+  active?: boolean; // Added active status to the user interface
 }
 
 // Auth context type
@@ -77,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Fetch user role from profiles table
     const { data, error } = await supabase
       .from('profiles')
-      .select('role, username')
+      .select('role, username, active')
       .eq('id', supabaseUser.id)
       .single();
     
@@ -91,7 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: supabaseUser.id,
       username: data?.username || supabaseUser.email?.split('@')[0] || 'user',
       role: (data?.role as UserRole) || 'user',
-      email: supabaseUser.email
+      email: supabaseUser.email,
+      active: data?.active // Add active status from profile data
     });
   };
 

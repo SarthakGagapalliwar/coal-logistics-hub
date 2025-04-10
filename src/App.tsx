@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Packages from "./pages/Packages";
+import InactivePage from "./pages/InactivePage";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +35,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/signin" replace />;
+  }
+  
+  if (user && user.active === false) {
+    return <Navigate to="/inactive" replace />;
   }
   
   return <>{children}</>;
@@ -56,6 +60,10 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/shipments" replace />;
   }
   
+  if (user && user.active === false) {
+    return <Navigate to="/inactive" replace />;
+  }
+  
   return <>{children}</>;
 };
 
@@ -65,8 +73,8 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/signin" element={<SignIn />} />
+      <Route path="/inactive" element={<InactivePage />} />
       
-      {/* Protected Routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
@@ -108,14 +116,12 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
-      {/* Admin-only Routes */}
       <Route path="/users" element={
         <AdminRoute>
           <UserManagement />
         </AdminRoute>
       } />
       
-      {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
