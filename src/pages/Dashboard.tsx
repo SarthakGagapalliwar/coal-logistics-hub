@@ -1,7 +1,7 @@
 import React from "react";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import DashboardCard from "@/components/ui-custom/DashboardCard";
-import DataTable from "@/components/ui-custom/DataTable";
+import { DataTable } from "@/components/ui-custom/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import {
   Truck,

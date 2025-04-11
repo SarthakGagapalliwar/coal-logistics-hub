@@ -1,8 +1,7 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
-import DataTable from "@/components/ui-custom/DataTable";
+import { DataTable } from "@/components/ui-custom/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,13 +78,11 @@ const Shipments = () => {
     }
   };
 
-  // Filter routes based on selected package
   const filteredRoutes =
     formData.packageId && formData.packageId !== "none"
       ? routes.filter((route) => route.assignedPackageId === formData.packageId)
       : routes;
 
-  // Define all possible columns
   const allColumns: Column[] = [
     {
       header: "ID",
@@ -145,7 +142,6 @@ const Shipments = () => {
     },
   ];
 
-  // Filter columns based on user role
   const columns = user?.role === 'admin' 
     ? allColumns 
     : allColumns.filter(col => 

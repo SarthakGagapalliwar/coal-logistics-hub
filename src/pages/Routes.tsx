@@ -2,7 +2,7 @@ import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import DataTable from "@/components/ui-custom/DataTable";
+import { DataTable } from "@/components/ui-custom/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

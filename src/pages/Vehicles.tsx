@@ -2,7 +2,7 @@ import React from "react";
 import { Helmet } from "react-helmet";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import PageTransition from "@/components/ui-custom/PageTransition";
-import DataTable from "@/components/ui-custom/DataTable";
+import { DataTable } from "@/components/ui-custom/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +55,6 @@ const Vehicles = () => {
 
   const { user } = useAuth();
 
-  // Helper function to format dates
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     try {
@@ -65,7 +64,6 @@ const Vehicles = () => {
     }
   };
 
-  // Columns for the data table
   const columns = [
     {
       header: "ID",
@@ -130,7 +128,6 @@ const Vehicles = () => {
     });
   }
 
-  // For mobile, show fewer columns
   const mobileColumns = isMobile
     ? columns.filter((col) =>
         ["Vehicle Number", "Type", "Status", "Actions"].includes(col.header)

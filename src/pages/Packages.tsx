@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Card, 
@@ -8,7 +7,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import DataTable from "@/components/ui-custom/DataTable";
+import { DataTable } from "@/components/ui-custom/DataTable";
 import { Plus, Pencil } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { usePackages } from "@/hooks/use-packages";
