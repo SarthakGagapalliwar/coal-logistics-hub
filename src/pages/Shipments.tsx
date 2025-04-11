@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -124,7 +123,7 @@ const Shipments = () => {
     },
     {
       header: "Associated Package",
-      accessorKey: "packageId",
+      accessorKey: "packageName",
       cell: (row: any) => {
         if (!row.packageId) return "None";
         const pkg = packages.find((p) => p.id === row.packageId);
@@ -135,11 +134,6 @@ const Shipments = () => {
       header: "Departure",
       accessorKey: "departureTime",
       cell: (row: any) => formatDate(row.departureTime),
-    },
-    {
-      header: "Arrival",
-      accessorKey: "arrivalTime",
-      cell: (row: any) => formatDate(row.arrivalTime),
     },
   ];
 
@@ -173,8 +167,8 @@ const Shipments = () => {
       )
     : columns;
 
-  // Define searchable columns for the DataTable
-  const searchableColumns = ["source", "destination", "transporterName", "packageId"];
+  // Define searchable columns for the DataTable - updated to use packageName
+  const searchableColumns = ["source", "destination", "transporterName", "packageName"];
 
   return (
     <DashboardLayout>

@@ -80,7 +80,7 @@ export const DataTable = <T extends Record<string, any>>({
     for (const [key, values] of Object.entries(columnFilters)) {
       if (values && values.length > 0) {
         // Get the value to filter on, handling nested properties
-        let itemValue = getItemValue(item, key);
+        const itemValue = getItemValue(item, key);
         
         // Skip this filter if the value is undefined or null
         if (itemValue === undefined || itemValue === null) continue;
@@ -117,7 +117,7 @@ export const DataTable = <T extends Record<string, any>>({
       else {
         return columns.some(column => {
           if (!column.accessorKey) return false;
-          // Fixed: Declare and use the variable properly
+          // Get the value based on accessorKey
           const value = getItemValue(item, column.accessorKey);
           return value !== undefined && 
                  String(value).toLowerCase().includes(searchQuery.toLowerCase());

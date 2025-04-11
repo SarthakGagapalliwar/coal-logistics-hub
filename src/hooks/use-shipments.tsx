@@ -24,6 +24,7 @@ export interface Shipment {
   remarks?: string;
   routeId?: string;
   packageId?: string;
+  packageName?: string;
   billingRatePerTon?: number;
   vendorRatePerTon?: number;
   created_at?: string;
@@ -70,7 +71,8 @@ export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = 
         *,
         transporters:transporter_id (name),
         vehicles:vehicle_id (vehicle_number),
-        routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
+        routes:route_id (billing_rate_per_ton, vendor_rate_per_ton),
+        packages:package_id (name)
       `)
       .order('created_at', { ascending: false });
     
@@ -93,6 +95,7 @@ export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = 
       ...dbToAppShipment(shipment),
       transporterName: shipment.transporters?.name || 'Unknown',
       vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
+      packageName: shipment.packages?.name || 'None',
       billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
       vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
     }));
@@ -216,7 +219,8 @@ export const useShipments = () => {
           .select(`
             *,
             transporters:transporter_id (name),
-            vehicles:vehicle_id (vehicle_number)
+            vehicles:vehicle_id (vehicle_number),
+            packages:package_id (name)
           `)
           .single();
         
@@ -229,6 +233,7 @@ export const useShipments = () => {
           ...dbToAppShipment(data),
           transporterName: data.transporters?.name || 'Unknown',
           vehicleNumber: data.vehicles?.vehicle_number || 'Unknown',
+          packageName: data.packages?.name || 'None',
         };
       } catch (err) {
         console.error('Error in add shipment mutation:', err);
