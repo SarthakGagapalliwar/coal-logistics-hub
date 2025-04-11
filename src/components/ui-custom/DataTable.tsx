@@ -205,7 +205,7 @@ export const DataTable = <T extends Record<string, any>>({
       return (
         <div className="flex items-center space-x-2">
           <span>{header}</span>
-          <Popover 
+          {/* <Popover 
             open={filterPopoverOpen[accessorKey]} 
             onOpenChange={(open) => setFilterPopoverOpen(prev => ({...prev, [accessorKey]: open}))}
           >
@@ -264,7 +264,7 @@ export const DataTable = <T extends Record<string, any>>({
                 </div>
               )}
             </PopoverContent>
-          </Popover>
+          </Popover> */}
         </div>
       );
     }
