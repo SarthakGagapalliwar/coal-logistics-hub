@@ -173,6 +173,9 @@ const Shipments = () => {
       )
     : columns;
 
+  // Define searchable columns for the DataTable
+  const searchableColumns = ["source", "destination", "transporterName", "packageId"];
+
   return (
     <DashboardLayout>
       <PageTransition>
@@ -220,8 +223,8 @@ const Shipments = () => {
                 <DataTable
                   data={shipments}
                   columns={mobileColumns}
-                  searchKey="source"
-                  searchPlaceholder="Search shipments..."
+                  searchableColumns={searchableColumns}
+                  searchPlaceholder="Search shipments by source, destination, transporter..."
                 />
               )}
             </CardContent>
