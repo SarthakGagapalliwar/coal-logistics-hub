@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Table,
@@ -53,6 +54,26 @@ export const DataTable = <T extends Record<string, any>>({
   const [filterPopoverOpen, setFilterPopoverOpen] = useState<Record<string, boolean>>({});
   const itemsPerPage = 8;
 
+  // Helper function to get value from an item by key (handles nested keys like "user.name")
+  const getItemValue = (item: T, key: string | keyof T) => {
+    if (!key) return undefined;
+    
+    // Handle nested properties using dot notation (e.g., "user.name")
+    if (typeof key === 'string' && key.includes('.')) {
+      const keys = key.split('.');
+      let value: any = item;
+      
+      for (const k of keys) {
+        if (value === null || value === undefined) return undefined;
+        value = value[k];
+      }
+      
+      return value;
+    }
+    
+    return item[key as keyof T];
+  };
+
   // Search across multiple columns or use searchKey if provided
   const filteredData = data.filter(item => {
     // First apply column filters
@@ -96,6 +117,7 @@ export const DataTable = <T extends Record<string, any>>({
       else {
         return columns.some(column => {
           if (!column.accessorKey) return false;
+          // Fixed: Declare and use the variable properly
           const value = getItemValue(item, column.accessorKey);
           return value !== undefined && 
                  String(value).toLowerCase().includes(searchQuery.toLowerCase());
@@ -105,26 +127,6 @@ export const DataTable = <T extends Record<string, any>>({
     
     return true;
   });
-
-  // Helper function to get value from an item by key (handles nested keys like "user.name")
-  const getItemValue = (item: T, key: string | keyof T) => {
-    if (!key) return undefined;
-    
-    // Handle nested properties using dot notation (e.g., "user.name")
-    if (typeof key === 'string' && key.includes('.')) {
-      const keys = key.split('.');
-      let value: any = item;
-      
-      for (const k of keys) {
-        if (value === null || value === undefined) return undefined;
-        value = value[k];
-      }
-      
-      return value;
-    }
-    
-    return item[key as keyof T];
-  };
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -139,6 +141,51 @@ export const DataTable = <T extends Record<string, any>>({
     getIsAllPageRowsSelected: () => false,
     toggleAllPageRowsSelected: () => {},
     getRowModel: () => ({ rows: [] }),
+  };
+
+  // Function to get unique values for a column
+  const getUniqueColumnValues = (accessorKey: string): string[] => {
+    if (!data || data.length === 0) return [];
+    
+    const values = data
+      .map(item => {
+        const value = getItemValue(item, accessorKey);
+        return value !== undefined && value !== null ? String(value) : null;
+      })
+      .filter((value): value is string => value !== null && value !== undefined);
+    
+    // Remove duplicates
+    return Array.from(new Set(values)).sort();
+  };
+
+  // Toggle a filter value
+  const toggleFilter = (accessorKey: string, value: string) => {
+    setColumnFilters(prev => {
+      const currentValues = prev[accessorKey] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
+      
+      return {
+        ...prev,
+        [accessorKey]: newValues
+      };
+    });
+    
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
+  };
+
+  // Clear all filters for a column
+  const clearColumnFilter = (accessorKey: string) => {
+    setColumnFilters(prev => {
+      const newFilters = { ...prev };
+      delete newFilters[accessorKey];
+      return newFilters;
+    });
+    
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
   };
 
   // Helper function to render the header content based on its type
@@ -223,51 +270,6 @@ export const DataTable = <T extends Record<string, any>>({
     }
     
     return header;
-  };
-
-  // Function to get unique values for a column
-  const getUniqueColumnValues = (accessorKey: string): string[] => {
-    if (!data || data.length === 0) return [];
-    
-    const values = data
-      .map(item => {
-        const value = getItemValue(item, accessorKey);
-        return value !== undefined && value !== null ? String(value) : null;
-      })
-      .filter((value): value is string => value !== null && value !== undefined);
-    
-    // Remove duplicates
-    return Array.from(new Set(values)).sort();
-  };
-
-  // Toggle a filter value
-  const toggleFilter = (accessorKey: string, value: string) => {
-    setColumnFilters(prev => {
-      const currentValues = prev[accessorKey] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter(v => v !== value)
-        : [...currentValues, value];
-      
-      return {
-        ...prev,
-        [accessorKey]: newValues
-      };
-    });
-    
-    // Reset to page 1 when filter changes
-    setCurrentPage(1);
-  };
-
-  // Clear all filters for a column
-  const clearColumnFilter = (accessorKey: string) => {
-    setColumnFilters(prev => {
-      const newFilters = { ...prev };
-      delete newFilters[accessorKey];
-      return newFilters;
-    });
-    
-    // Reset to page 1 when filter changes
-    setCurrentPage(1);
   };
 
   return (
