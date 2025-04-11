@@ -85,7 +85,8 @@ const Shipments = () => {
       ? routes.filter((route) => route.assignedPackageId === formData.packageId)
       : routes;
 
-  const columns: Column[] = [
+  // Define all possible columns
+  const allColumns: Column[] = [
     {
       header: "ID",
       accessorKey: "id",
@@ -143,6 +144,13 @@ const Shipments = () => {
       cell: (row: any) => formatDate(row.arrivalTime),
     },
   ];
+
+  // Filter columns based on user role
+  const columns = user?.role === 'admin' 
+    ? allColumns 
+    : allColumns.filter(col => 
+        col.header !== "Billing Rate" && col.header !== "Vendor Rate"
+      );
 
   if (user?.role === "admin") {
     columns.push({
