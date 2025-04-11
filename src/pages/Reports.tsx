@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Loader2, AlertTriangle, Download, CalendarIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, Download, CalendarIcon, ArrowUpDown } from 'lucide-react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,8 @@ const Reports = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [shipmentReports, setShipmentReports] = useState<any[]>([]);
   const [isLoadingShipments, setIsLoadingShipments] = useState(false);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const isAdmin = user?.role === 'admin';
   
   // Calculate analytics metrics (only relevant for admins)
@@ -56,14 +57,50 @@ const Reports = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9467BD'];
 
   // For regular users: Load all their shipment reports on component mount
+  // For admins: Load all shipments regardless of date
   React.useEffect(() => {
-    if (user && user.role !== 'admin') {
-      fetchAllUserShipments();
-    } else if (dateRange?.from && dateRange?.to && isAdmin) {
-      // For admins, only fetch when date range is selected
-      fetchShipmentReports();
+    if (user) {
+      if (user.role !== 'admin') {
+        fetchAllUserShipments();
+      } else {
+        fetchAllShipments();
+      }
     }
-  }, [user, dateRange]);
+  }, [user]);
+
+  // Fetch all shipments for admin regardless of date
+  const fetchAllShipments = async () => {
+    if (!isAdmin) return;
+    
+    setIsLoadingShipments(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('shipments')
+        .select(`
+          id,
+          source,
+          destination,
+          quantity_tons,
+          departure_time,
+          transporters:transporter_id (name),
+          vehicles:vehicle_id (vehicle_number),
+          packages:package_id (name)
+        `)
+        .order('departure_time', { ascending: false });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      setShipmentReports(data || []);
+    } catch (err) {
+      console.error('Error fetching all shipment reports:', err);
+      toast.error(`Failed to fetch shipment reports: ${(err as Error).message}`);
+    } finally {
+      setIsLoadingShipments(false);
+    }
+  };
 
   // Fetch all shipments for a regular user regardless of date
   const fetchAllUserShipments = async () => {
@@ -119,44 +156,50 @@ const Reports = () => {
     }
   };
 
-  // Admin-only: fetch shipment reports based on date range
-  const fetchShipmentReports = async () => {
-    if (!isAdmin || !dateRange?.from || !dateRange?.to) {
-      return;
+  // Sort shipments based on sortField and sortDirection
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // If already sorting by this field, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New sort field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
     }
+  };
+
+  // Get sorted shipments
+  const getSortedShipments = () => {
+    if (!sortField) return shipmentReports;
     
-    setIsLoadingShipments(true);
-    
-    try {
-      // Create query for admins to fetch all shipments
-      const { data, error } = await supabase
-        .from('shipments')
-        .select(`
-          id,
-          source,
-          destination,
-          quantity_tons,
-          departure_time,
-          transporters:transporter_id (name),
-          vehicles:vehicle_id (vehicle_number),
-          packages:package_id (name)
-        `)
-        .gte('departure_time', dateRange.from.toISOString())
-        .lte('departure_time', dateRange.to.toISOString())
-        .order('departure_time', { ascending: false });
+    return [...shipmentReports].sort((a, b) => {
+      let valueA, valueB;
       
-      if (error) {
-        throw new Error(error.message);
+      // Handle nested properties
+      if (sortField === 'transporters.name') {
+        valueA = a.transporters?.name || '';
+        valueB = b.transporters?.name || '';
+      } else if (sortField === 'vehicles.vehicle_number') {
+        valueA = a.vehicles?.vehicle_number || '';
+        valueB = b.vehicles?.vehicle_number || '';
+      } else if (sortField === 'packages.name') {
+        valueA = a.packages?.name || '';
+        valueB = b.packages?.name || '';
+      } else {
+        valueA = a[sortField] || '';
+        valueB = b[sortField] || '';
       }
       
-      // Format the data for display
-      setShipmentReports(data || []);
-    } catch (err) {
-      console.error('Error fetching shipment reports:', err);
-      toast.error(`Failed to fetch shipment reports: ${(err as Error).message}`);
-    } finally {
-      setIsLoadingShipments(false);
-    }
+      // Sort strings case-insensitively
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        const comparison = valueA.toLowerCase().localeCompare(valueB.toLowerCase());
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+      
+      // Sort numbers
+      const comparison = valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
   };
 
   const handleExportExcel = async () => {
@@ -256,7 +299,7 @@ const Reports = () => {
       
       const filename = isAdmin && dateRange?.from && dateRange?.to
         ? `Shipments_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.xlsx`
-        : `My_Shipments_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+        : `Shipments_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
       
       writeFile(workbook, filename);
       
@@ -332,6 +375,8 @@ const Reports = () => {
       </DashboardLayout>
     );
   }
+
+  const sortedShipments = getSortedShipments();
 
   return (
     <DashboardLayout>
@@ -515,19 +560,18 @@ const Reports = () => {
         
         {/* Shipment reports table - shown to all users */}
         <Card>
-          <CardHeader>
-            <CardTitle>
-              {isAdmin ? 'Shipment Reports' : 'My Shipment Reports'}
-            </CardTitle>
-            <CardDescription>
-              {isAdmin 
-                ? (dateRange?.from && dateRange?.to 
-                  ? `Shipments from ${format(dateRange.from, "LLL dd, y")} to ${format(dateRange.to, "LLL dd, y")}`
-                  : 'Select a date range to view shipments'
-                  )
-                : 'All shipments assigned to you'
-              }
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle>
+                {isAdmin ? 'Shipment Reports' : 'My Shipment Reports'}
+              </CardTitle>
+              <CardDescription>
+                {isAdmin 
+                  ? 'All shipments in the system'
+                  : 'All shipments assigned to you'
+                }
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoadingShipments ? (
@@ -539,26 +583,71 @@ const Reports = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {shipmentColumns.map((column, index) => (
-                        <TableHead key={index}>{column.header}</TableHead>
-                      ))}
+                      {isAdmin ? (
+                        // For admin: sortable headers
+                        <>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('packages.name')}
+                          >
+                            Package
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('source')}
+                          >
+                            Source
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('destination')}
+                          >
+                            Destination
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('transporters.name')}
+                          >
+                            Transport
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('vehicles.vehicle_number')}
+                          >
+                            Vehicle
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+                          </TableHead>
+                          <TableHead>
+                            Quantity
+                          </TableHead>
+                          <TableHead>
+                            Departure Date
+                          </TableHead>
+                        </>
+                      ) : (
+                        // For regular users: regular headers
+                        shipmentColumns.map((column, index) => (
+                          <TableHead key={index}>{column.header}</TableHead>
+                        ))
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {shipmentReports.length === 0 ? (
+                    {sortedShipments.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={shipmentColumns.length} className="h-24 text-center">
                           {isAdmin
-                            ? (dateRange?.from && dateRange?.to
-                              ? 'No shipments found for the selected date range'
-                              : 'Select a date range to view shipments'
-                            )
+                            ? 'No shipments found in the system'
                             : 'No shipments have been assigned to you'
                           }
                         </TableCell>
                       </TableRow>
                     ) : (
-                      shipmentReports.map((shipment) => (
+                      sortedShipments.map((shipment) => (
                         <TableRow key={shipment.id}>
                           <TableCell>{shipment.packages?.name || 'N/A'}</TableCell>
                           <TableCell>{shipment.source}</TableCell>
@@ -582,4 +671,3 @@ const Reports = () => {
 };
 
 export default Reports;
-
