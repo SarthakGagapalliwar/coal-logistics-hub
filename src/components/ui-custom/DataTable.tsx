@@ -22,7 +22,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
 }
 
-const DataTable = <T extends Record<string, any>>({
+export const DataTable = <T extends Record<string, any>>({
   data,
   columns,
   searchPlaceholder = "Search...",
@@ -181,5 +181,3 @@ const DataTable = <T extends Record<string, any>>({
     </div>
   );
 };
-
-export default DataTable;

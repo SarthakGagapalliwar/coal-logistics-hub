@@ -9,7 +9,7 @@ import { useAnalytics } from '@/hooks/use-analytics';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, isAfter, isBefore, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { utils, writeFile } from 'xlsx';
 import { supabase } from '@/lib/supabase';
@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTable } from '@/components/ui-custom/DataTable';
 
 const Reports = () => {
   const { revenueData, shipmentStatusData, isLoading, error } = useAnalytics();
@@ -35,6 +36,7 @@ const Reports = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [shipmentReports, setShipmentReports] = useState<any[]>([]);
   const [isLoadingShipments, setIsLoadingShipments] = useState(false);
+  const isAdmin = user?.role === 'admin';
   
   // Calculate analytics metrics (only relevant for admins)
   const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
@@ -53,25 +55,43 @@ const Reports = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9467BD'];
 
-  // Load shipment reports when date range changes
+  // For regular users: Load all their shipment reports on component mount
   React.useEffect(() => {
-    if (dateRange?.from && dateRange?.to) {
+    if (user && user.role !== 'admin') {
+      fetchAllUserShipments();
+    } else if (dateRange?.from && dateRange?.to && isAdmin) {
+      // For admins, only fetch when date range is selected
       fetchShipmentReports();
     }
-  }, [dateRange]);
+  }, [user, dateRange]);
 
-  // Fetch shipment reports based on user role and date range
-  const fetchShipmentReports = async () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      toast.error('Please select both start and end dates');
-      return;
-    }
+  // Fetch all shipments for a regular user regardless of date
+  const fetchAllUserShipments = async () => {
+    if (!user) return;
     
     setIsLoadingShipments(true);
     
     try {
-      // Create query - for regular users, only fetch their own shipments
-      let query = supabase
+      // First get user's assigned packages
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('assigned_packages')
+        .eq('id', user.id)
+        .single();
+        
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+      
+      // Return early if user has no assigned packages
+      if (!profileData?.assigned_packages || profileData.assigned_packages.length === 0) {
+        setShipmentReports([]);
+        setIsLoadingShipments(false);
+        return;
+      }
+      
+      // Fetch shipments filtered by the user's assigned packages
+      const { data, error } = await supabase
         .from('shipments')
         .select(`
           id,
@@ -82,34 +102,45 @@ const Reports = () => {
           transporters:transporter_id (name),
           vehicles:vehicle_id (vehicle_number),
           packages:package_id (name)
-        `);
-
-      // If user is not an admin, filter by packages assigned to them
-      if (user && user.role !== 'admin') {
-        // First get user's assigned packages
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('assigned_packages')
-          .eq('id', user.id)
-          .single();
-          
-        if (profileError) {
-          throw new Error(profileError.message);
-        }
-        
-        // Filter shipments by the user's assigned packages
-        if (profileData?.assigned_packages && profileData.assigned_packages.length > 0) {
-          query = query.in('package_id', profileData.assigned_packages);
-        } else {
-          // If user has no assigned packages, return empty result
-          setShipmentReports([]);
-          setIsLoadingShipments(false);
-          return;
-        }
+        `)
+        .in('package_id', profileData.assigned_packages)
+        .order('departure_time', { ascending: false });
+      
+      if (error) {
+        throw new Error(error.message);
       }
       
-      // Add date range filter and execute query
-      const { data, error } = await query
+      setShipmentReports(data || []);
+    } catch (err) {
+      console.error('Error fetching user shipment reports:', err);
+      toast.error(`Failed to fetch shipment reports: ${(err as Error).message}`);
+    } finally {
+      setIsLoadingShipments(false);
+    }
+  };
+
+  // Admin-only: fetch shipment reports based on date range
+  const fetchShipmentReports = async () => {
+    if (!isAdmin || !dateRange?.from || !dateRange?.to) {
+      return;
+    }
+    
+    setIsLoadingShipments(true);
+    
+    try {
+      // Create query for admins to fetch all shipments
+      const { data, error } = await supabase
+        .from('shipments')
+        .select(`
+          id,
+          source,
+          destination,
+          quantity_tons,
+          departure_time,
+          transporters:transporter_id (name),
+          vehicles:vehicle_id (vehicle_number),
+          packages:package_id (name)
+        `)
         .gte('departure_time', dateRange.from.toISOString())
         .lte('departure_time', dateRange.to.toISOString())
         .order('departure_time', { ascending: false });
@@ -129,7 +160,7 @@ const Reports = () => {
   };
 
   const handleExportExcel = async () => {
-    if (!dateRange?.from || !dateRange?.to) {
+    if (isAdmin && (!dateRange?.from || !dateRange?.to)) {
       toast.error('Please select both start and end dates');
       return;
     }
@@ -137,7 +168,7 @@ const Reports = () => {
     setIsExporting(true);
     
     try {
-      // Create query for export - get detailed shipment data
+      // Create query for export
       let query = supabase
         .from('shipments')
         .select(`
@@ -167,20 +198,25 @@ const Reports = () => {
           setIsExporting(false);
           return;
         }
+      } else if (isAdmin && dateRange?.from && dateRange?.to) {
+        // Apply date range filter only for admins
+        query = query
+          .gte('departure_time', dateRange.from.toISOString())
+          .lte('departure_time', dateRange.to.toISOString());
       }
       
-      // Apply date range filter and get data
-      const { data, error } = await query
-        .gte('departure_time', dateRange.from.toISOString())
-        .lte('departure_time', dateRange.to.toISOString())
-        .order('departure_time', { ascending: false });
+      // Order by departure time
+      query = query.order('departure_time', { ascending: false });
+      
+      // Get the data
+      const { data, error } = await query;
       
       if (error) {
         throw new Error(error.message);
       }
       
       if (data.length === 0) {
-        toast.warning('No shipments found in the selected date range');
+        toast.warning('No shipments found to export');
         setIsExporting(false);
         return;
       }
@@ -201,7 +237,7 @@ const Reports = () => {
         };
         
         // Add billing information only for admins
-        if (user?.role === 'admin') {
+        if (isAdmin) {
           return {
             ...baseFields,
             'ID': shipment.id,
@@ -218,9 +254,9 @@ const Reports = () => {
       const workbook = utils.book_new();
       utils.book_append_sheet(workbook, worksheet, 'Shipments');
       
-      const fromDate = format(dateRange.from, 'yyyy-MM-dd');
-      const toDate = format(dateRange.to, 'yyyy-MM-dd');
-      const filename = `Shipments_${fromDate}_to_${toDate}.xlsx`;
+      const filename = isAdmin && dateRange?.from && dateRange?.to
+        ? `Shipments_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.xlsx`
+        : `My_Shipments_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
       
       writeFile(workbook, filename);
       
@@ -232,6 +268,43 @@ const Reports = () => {
       setIsExporting(false);
     }
   };
+
+  // Table columns definition - same for both admin and regular users
+  const shipmentColumns = [
+    { 
+      header: "Package",
+      accessorKey: "packages.name",
+      cell: (row: any) => row.packages?.name || 'N/A'
+    },
+    {
+      header: "Source",
+      accessorKey: "source"
+    },
+    {
+      header: "Destination",
+      accessorKey: "destination"
+    },
+    {
+      header: "Transport",
+      accessorKey: "transporters.name",
+      cell: (row: any) => row.transporters?.name || 'Unknown'
+    },
+    {
+      header: "Vehicle",
+      accessorKey: "vehicles.vehicle_number",
+      cell: (row: any) => row.vehicles?.vehicle_number || 'Unknown'
+    },
+    {
+      header: "Quantity",
+      accessorKey: "quantity_tons",
+      cell: (row: any) => `${row.quantity_tons} tons`
+    },
+    {
+      header: "Departure Date",
+      accessorKey: "departure_time",
+      cell: (row: any) => format(parseISO(row.departure_time), 'PPP')
+    }
+  ];
 
   if (isLoading) {
     return (
@@ -266,49 +339,52 @@ const Reports = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Reports & Analytics</h1>
           
+          {/* Export button - visible to all users, but date selection only for admins */}
           <div className="flex items-center gap-2">
-            <div className="grid gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant="outline"
-                    className={cn(
-                      "w-[300px] justify-start text-left font-normal",
-                      !dateRange?.from && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
-                        </>
+            {isAdmin && (
+              <div className="grid gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant="outline"
+                      className={cn(
+                        "w-[300px] justify-start text-left font-normal",
+                        !dateRange?.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "LLL dd, y")
+                        )
                       ) : (
-                        format(dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Select date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                    className="pointer-events-auto p-3"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+                        <span>Select date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange?.from}
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                      className="pointer-events-auto p-3"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
             
             <Button 
               onClick={handleExportExcel} 
-              disabled={isExporting || !dateRange?.from || !dateRange?.to}
+              disabled={isExporting || (isAdmin && (!dateRange?.from || !dateRange?.to))}
             >
               {isExporting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -320,10 +396,9 @@ const Reports = () => {
           </div>
         </div>
         
-        {/* Show different content based on user role */}
-        {user?.role === 'admin' ? (
+        {/* Admin view with metrics and charts */}
+        {isAdmin && (
           <>
-            {/* Admin view with metrics and charts */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardHeader className="pb-2">
@@ -436,16 +511,21 @@ const Reports = () => {
               </TabsContent>
             </Tabs>
           </>
-        ) : null}
+        )}
         
         {/* Shipment reports table - shown to all users */}
         <Card>
           <CardHeader>
-            <CardTitle>Shipment Reports</CardTitle>
+            <CardTitle>
+              {isAdmin ? 'Shipment Reports' : 'My Shipment Reports'}
+            </CardTitle>
             <CardDescription>
-              {dateRange?.from && dateRange?.to 
-                ? `Shipments from ${format(dateRange.from, "LLL dd, y")} to ${format(dateRange.to, "LLL dd, y")}`
-                : 'Select a date range to view shipments'
+              {isAdmin 
+                ? (dateRange?.from && dateRange?.to 
+                  ? `Shipments from ${format(dateRange.from, "LLL dd, y")} to ${format(dateRange.to, "LLL dd, y")}`
+                  : 'Select a date range to view shipments'
+                  )
+                : 'All shipments assigned to you'
               }
             </CardDescription>
           </CardHeader>
@@ -459,22 +539,21 @@ const Reports = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Package</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Destination</TableHead>
-                      <TableHead>Transport</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Departure Date</TableHead>
+                      {shipmentColumns.map((column, index) => (
+                        <TableHead key={index}>{column.header}</TableHead>
+                      ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {shipmentReports.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          {dateRange?.from && dateRange?.to
-                            ? 'No shipments found for the selected date range'
-                            : 'Select a date range to view shipments'
+                        <TableCell colSpan={shipmentColumns.length} className="h-24 text-center">
+                          {isAdmin
+                            ? (dateRange?.from && dateRange?.to
+                              ? 'No shipments found for the selected date range'
+                              : 'Select a date range to view shipments'
+                            )
+                            : 'No shipments have been assigned to you'
                           }
                         </TableCell>
                       </TableRow>
@@ -503,3 +582,4 @@ const Reports = () => {
 };
 
 export default Reports;
+
