@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -7,6 +6,7 @@ import { fetchTransporters } from './use-transporters';
 import { fetchVehicles } from './use-vehicles';
 import { fetchRoutes } from './use-routes';
 import { fetchPackages } from './use-packages';
+import { useAuth } from '@/context/AuthContext';
 
 // Type for our app's shipment format
 export interface Shipment {
@@ -61,10 +61,10 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   package_id: shipment.packageId && shipment.packageId !== 'none' ? shipment.packageId : null,
 });
 
-// Isolate the data fetching function
-export const fetchShipments = async () => {
+// Fetch shipments based on user role and assigned packages
+export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = []) => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('shipments')
       .select(`
         *,
@@ -73,6 +73,16 @@ export const fetchShipments = async () => {
         routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
       `)
       .order('created_at', { ascending: false });
+    
+    // For regular users, only show shipments related to their assigned packages
+    if (!isAdmin && userPackages.length > 0) {
+      query = query.in('package_id', userPackages);
+    } else if (!isAdmin) {
+      // If a regular user has no assigned packages, return empty array
+      return [];
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching shipments:', error);
@@ -96,6 +106,8 @@ export const useShipments = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   
   // Use separate queries for related data
   const { data: transporters = [] } = useQuery({
@@ -134,14 +146,39 @@ export const useShipments = () => {
     vendorRatePerTon: null,
   });
 
+  // Fetch user's assigned packages
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: async () => {
+      if (!user || isAdmin) return { assigned_packages: [] };
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('assigned_packages')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return { assigned_packages: [] };
+      }
+      
+      return data;
+    },
+    enabled: !!user && !isAdmin
+  });
+  
+  const userPackages = userProfile?.assigned_packages || [];
+
   // Query to fetch shipments
   const { 
     data: shipments = [], 
     isLoading, 
     error 
   } = useQuery({
-    queryKey: ['shipments'],
-    queryFn: fetchShipments
+    queryKey: ['shipments', isAdmin, userPackages],
+    queryFn: () => fetchShipments(isAdmin, userPackages),
+    enabled: !!user
   });
 
   // Mutation to add a new shipment

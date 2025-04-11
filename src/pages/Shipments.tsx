@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -183,7 +184,9 @@ const Shipments = () => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Shipments</h1>
               <p className="text-muted-foreground">
-                Manage and track all coal shipments
+                {user?.role === 'admin' 
+                  ? "Manage and track all coal shipments" 
+                  : "View and track your assigned shipments"}
               </p>
             </div>
             <Button onClick={handleAddShipment}>
@@ -195,13 +198,23 @@ const Shipments = () => {
             <CardHeader>
               <CardTitle>Shipments List</CardTitle>
               <CardDescription>
-                View and manage all coal shipments
+                {user?.role === 'admin' 
+                  ? "View and manage all coal shipments" 
+                  : "View shipments assigned to you"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : shipments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    {user?.role === 'admin' 
+                      ? "No shipments found in the system." 
+                      : "You don't have any shipments assigned to you."}
+                  </p>
                 </div>
               ) : (
                 <DataTable
