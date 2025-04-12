@@ -409,35 +409,6 @@ const Shipments = () => {
                       />
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="arrivalTime">Arrival Time (Optional)</Label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="arrivalTime"
-                        name="arrivalTime"
-                        type="datetime-local"
-                        className="pl-10"
-                        value={
-                          formData.arrivalTime
-                            ? new Date(formData.arrivalTime)
-                                .toISOString()
-                                .slice(0, 16)
-                            : ""
-                        }
-                        onChange={(e) => {
-                          const date = e.target.value
-                            ? new Date(e.target.value).toISOString()
-                            : "";
-                          setFormData((prev) => ({
-                            ...prev,
-                            arrivalTime: date,
-                          }));
-                        }}
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
