@@ -14,7 +14,8 @@ import {
   X,
   User,
   Users,
-  Box
+  Box,
+  Car  // Add Car to the import list
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
