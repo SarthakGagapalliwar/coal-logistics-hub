@@ -138,9 +138,7 @@ export const usePackages = () => {
       const { id, ...rest } = packageData;
       
       // Convert to DB format for the update operation
-      const dbData = {
-        name: rest.name
-      };
+      const dbData = appToDbPackage(rest);
       
       console.log("Updating package with ID:", id, "Data:", dbData);
       
