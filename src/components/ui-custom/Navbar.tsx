@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -71,7 +72,7 @@ const Navbar: React.FC = () => {
   const navItems = [
     { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
-    { to: '/vehicles', icon: <Truck size={20} />, label: 'Vehicles' },
+    { to: '/vehicles', icon: <Car size={20} />, label: 'Vehicles' },
     { to: '/packages', icon: <Box size={20} />, label: 'Packages' },
     { to: '/routes', icon: <Route size={20} />, label: 'Routes' },
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
@@ -226,3 +227,4 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
