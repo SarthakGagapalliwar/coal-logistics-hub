@@ -1,7 +1,6 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Loader2, AlertTriangle, Download, CalendarIcon, ArrowUpDown } from 'lucide-react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useAnalytics } from '@/hooks/use-analytics';
@@ -23,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DataTable } from '@/components/ui-custom/DataTable';
 
 const Reports = () => {
   const { revenueData, shipmentStatusData, isLoading, error } = useAnalytics();
@@ -441,122 +439,7 @@ const Reports = () => {
           </div>
         </div>
         
-        {/* Admin view with metrics and charts */}
-        {isAdmin && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Total Revenue</CardTitle>
-                  <CardDescription>All time earnings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Total Profit</CardTitle>
-                  <CardDescription>Revenue minus costs</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">₹{totalProfit.toLocaleString()}</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Shipment Count</CardTitle>
-                  <CardDescription>Total shipments processed</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{totalShipments}</p>
-                  <p className="text-sm text-muted-foreground">{completedShipments} completed</p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <Tabs defaultValue="revenue" className="w-full mb-6">
-              <TabsList className="mb-4">
-                <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
-                <TabsTrigger value="shipments">Shipment Status</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="revenue" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Monthly Revenue & Profit</CardTitle>
-                    <CardDescription>Financial performance over time</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80">
-                      {revenueData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={revenueData}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [`₹${value}`, undefined]} />
-                            <Legend />
-                            <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
-                            <Bar dataKey="profit" name="Profit" fill="#82ca9d" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="flex justify-center items-center h-full">
-                          <p className="text-muted-foreground">No revenue data available</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="shipments" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Shipment Status Distribution</CardTitle>
-                    <CardDescription>Current status of all shipments</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80">
-                      {statusData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={statusData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {statusData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => [value, 'Shipments']} />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="flex justify-center items-center h-full">
-                          <p className="text-muted-foreground">No shipment data available</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
+        {/* Removed the admin view with metrics and charts as requested */}
         
         {/* Shipment reports table - shown to all users */}
         <Card>
