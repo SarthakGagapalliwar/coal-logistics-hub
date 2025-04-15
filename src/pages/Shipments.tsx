@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -179,7 +178,6 @@ const Shipments = () => {
       )
     : columns;
 
-  // Define searchable columns for the DataTable - updated to use packageName
   const searchableColumns = ["source", "destination", "transporterName", "packageName", "materialName"];
 
   return (
@@ -280,7 +278,7 @@ const Shipments = () => {
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="materialId">Select Material</Label>
                     <div className="relative">
-                      <Flask className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Beaker className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Select
                         value={formData.materialId}
                         onValueChange={(value) =>
