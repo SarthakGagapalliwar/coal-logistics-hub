@@ -36,6 +36,7 @@ import {
   Weight,
   Calendar,
   Package,
+  Flask,
 } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -63,6 +64,7 @@ const Shipments = () => {
     vehicles,
     routes,
     packages,
+    materials,
     isSubmitting,
   } = useShipments();
 
@@ -131,6 +133,15 @@ const Shipments = () => {
       },
     },
     {
+      header: "Material",
+      accessorKey: "materialName",
+      cell: (row: any) => {
+        if (!row.materialId) return "None";
+        const material = materials.find((m) => m.id === row.materialId);
+        return material ? material.name : "Unknown";
+      },
+    },
+    {
       header: "Departure",
       accessorKey: "departureTime",
       cell: (row: any) => formatDate(row.departureTime),
@@ -168,7 +179,7 @@ const Shipments = () => {
     : columns;
 
   // Define searchable columns for the DataTable - updated to use packageName
-  const searchableColumns = ["source", "destination", "transporterName", "packageName"];
+  const searchableColumns = ["source", "destination", "transporterName", "packageName", "materialName"];
 
   return (
     <DashboardLayout>
@@ -263,6 +274,33 @@ const Shipments = () => {
                     <p className="text-xs text-muted-foreground">
                       Selecting a package will filter available routes
                     </p>
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="materialId">Select Material</Label>
+                    <div className="relative">
+                      <Flask className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Select
+                        value={formData.materialId}
+                        onValueChange={(value) =>
+                          handleSelectChange("materialId", value)
+                        }
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select a material" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {materials
+                            .filter(m => m.status === 'available')
+                            .map((material) => (
+                              <SelectItem key={material.id} value={material.id}>
+                                {material.name} ({material.unit})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2 sm:col-span-2">

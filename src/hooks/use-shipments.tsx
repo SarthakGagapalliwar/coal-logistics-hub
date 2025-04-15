@@ -6,6 +6,7 @@ import { fetchTransporters } from './use-transporters';
 import { fetchVehicles } from './use-vehicles';
 import { fetchRoutes } from './use-routes';
 import { fetchPackages } from './use-packages';
+import { fetchMaterials } from './use-materials';
 import { useAuth } from '@/context/AuthContext';
 
 // Type for our app's shipment format
@@ -25,6 +26,8 @@ export interface Shipment {
   routeId?: string;
   packageId?: string;
   packageName?: string;
+  materialId?: string;
+  materialName?: string;
   billingRatePerTon?: number;
   vendorRatePerTon?: number;
   created_at?: string;
@@ -44,6 +47,7 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   remarks: dbShipment.remarks,
   routeId: dbShipment.route_id,
   packageId: dbShipment.package_id,
+  materialId: dbShipment.material_id,
   created_at: dbShipment.created_at,
 });
 
@@ -60,6 +64,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   remarks: shipment.remarks,
   route_id: shipment.routeId,
   package_id: shipment.packageId && shipment.packageId !== 'none' ? shipment.packageId : null,
+  material_id: shipment.materialId && shipment.materialId !== 'none' ? shipment.materialId : null,
 });
 
 // Fetch shipments based on user role and assigned packages
@@ -72,7 +77,8 @@ export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = 
         transporters:transporter_id (name),
         vehicles:vehicle_id (vehicle_number),
         routes:route_id (billing_rate_per_ton, vendor_rate_per_ton),
-        packages:package_id (name)
+        packages:package_id (name),
+        materials:material_id (name)
       `)
       .order('created_at', { ascending: false });
     
@@ -96,6 +102,7 @@ export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = 
       transporterName: shipment.transporters?.name || 'Unknown',
       vehicleNumber: shipment.vehicles?.vehicle_number || 'Unknown',
       packageName: shipment.packages?.name || 'None',
+      materialName: shipment.materials?.name || 'None',
       billingRatePerTon: shipment.routes?.billing_rate_per_ton || null,
       vendorRatePerTon: shipment.routes?.vendor_rate_per_ton || null,
     }));
@@ -133,6 +140,11 @@ export const useShipments = () => {
     queryFn: fetchPackages
   });
   
+  const { data: materials = [] } = useQuery({
+    queryKey: ['materials'],
+    queryFn: fetchMaterials
+  });
+  
   const [formData, setFormData] = useState({
     transporterId: '',
     vehicleId: '',
@@ -145,6 +157,7 @@ export const useShipments = () => {
     remarks: '',
     routeId: '',
     packageId: 'none',
+    materialId: 'none',
     billingRatePerTon: null,
     vendorRatePerTon: null,
   });
@@ -188,28 +201,7 @@ export const useShipments = () => {
   const addShipmentMutation = useMutation({
     mutationFn: async (shipment: Omit<Shipment, 'id'>) => {
       try {
-        // Find route_id by source and destination if not provided
         let shipmentData = appToDbShipment(shipment);
-        
-        // If we have source and destination but no route_id, try to find a matching route
-        if (!shipmentData.route_id && shipment.source && shipment.destination) {
-          // If package is selected, filter routes by package
-          const matchingRoute = shipment.packageId && shipment.packageId !== 'none'
-            ? routes.find(route => 
-                route.source.toLowerCase() === shipment.source.toLowerCase() && 
-                route.destination.toLowerCase() === shipment.destination.toLowerCase() &&
-                route.assignedPackageId === shipment.packageId
-              )
-            : routes.find(route => 
-                route.source.toLowerCase() === shipment.source.toLowerCase() && 
-                route.destination.toLowerCase() === shipment.destination.toLowerCase()
-              );
-          
-          if (matchingRoute) {
-            shipmentData.route_id = matchingRoute.id;
-            console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
-          }
-        }
         
         console.log('Creating shipment with data:', shipmentData);
         
@@ -220,7 +212,8 @@ export const useShipments = () => {
             *,
             transporters:transporter_id (name),
             vehicles:vehicle_id (vehicle_number),
-            packages:package_id (name)
+            packages:package_id (name),
+            materials:material_id (name)
           `)
           .single();
         
@@ -234,6 +227,7 @@ export const useShipments = () => {
           transporterName: data.transporters?.name || 'Unknown',
           vehicleNumber: data.vehicles?.vehicle_number || 'Unknown',
           packageName: data.packages?.name || 'None',
+          materialName: data.materials?.name || 'None',
         };
       } catch (err) {
         console.error('Error in add shipment mutation:', err);
@@ -257,26 +251,6 @@ export const useShipments = () => {
     mutationFn: async (shipment: Shipment) => {
       try {
         let shipmentData = appToDbShipment(shipment);
-        
-        // If we have source and destination but no route_id, try to find a matching route
-        if (!shipmentData.route_id && shipment.source && shipment.destination) {
-          // If package is selected, filter routes by package
-          const matchingRoute = shipment.packageId && shipment.packageId !== 'none'
-            ? routes.find(route => 
-                route.source.toLowerCase() === shipment.source.toLowerCase() && 
-                route.destination.toLowerCase() === shipment.destination.toLowerCase() &&
-                route.assignedPackageId === shipment.packageId
-              )
-            : routes.find(route => 
-                route.source.toLowerCase() === shipment.source.toLowerCase() && 
-                route.destination.toLowerCase() === shipment.destination.toLowerCase()
-              );
-          
-          if (matchingRoute) {
-            shipmentData.route_id = matchingRoute.id;
-            console.log(`Found matching route: ${matchingRoute.id} for ${shipment.source} to ${shipment.destination}`);
-          }
-        }
         
         console.log('Updating shipment with data:', shipmentData);
         console.log('Shipment ID:', shipment.id);
@@ -386,6 +360,7 @@ export const useShipments = () => {
       remarks: shipment.remarks || '',
       routeId: shipment.routeId || '',
       packageId: shipment.packageId || 'none',
+      materialId: shipment.materialId || 'none',
       billingRatePerTon: shipment.billingRatePerTon || null,
       vendorRatePerTon: shipment.vendorRatePerTon || null,
     });
@@ -413,6 +388,7 @@ export const useShipments = () => {
       remarks: '',
       routeId: '',
       packageId: 'none',
+      materialId: 'none',
       billingRatePerTon: null,
       vendorRatePerTon: null,
     });
@@ -434,6 +410,7 @@ export const useShipments = () => {
       remarks: formData.remarks,
       routeId: formData.routeId || undefined,
       packageId: formData.packageId === 'none' ? undefined : formData.packageId,
+      materialId: formData.materialId === 'none' ? undefined : formData.materialId,
       billingRatePerTon: formData.billingRatePerTon,
       vendorRatePerTon: formData.vendorRatePerTon,
     };
@@ -472,5 +449,6 @@ export const useShipments = () => {
     vehicles,
     routes,
     packages,
+    materials,
   };
 };

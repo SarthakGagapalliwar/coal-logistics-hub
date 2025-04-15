@@ -19,6 +19,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Packages from "./pages/Packages";
+import Materials from "./pages/Materials";
 import InactivePage from "./pages/InactivePage";
 
 // Protected route component
@@ -93,6 +94,11 @@ const AppRoutes = () => {
       <Route path="/packages" element={
         <AdminRoute>
           <Packages />
+        </AdminRoute>
+      } />
+      <Route path="/materials" element={
+        <AdminRoute>
+          <Materials />
         </AdminRoute>
       } />
       <Route path="/routes" element={

@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          status: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       packages: {
         Row: {
           created_at: string
@@ -137,6 +167,7 @@ export type Database = {
           departure_time: string
           destination: string
           id: string
+          material_id: string | null
           package_id: string | null
           quantity_tons: number
           remarks: string | null
@@ -153,6 +184,7 @@ export type Database = {
           departure_time: string
           destination: string
           id?: string
+          material_id?: string | null
           package_id?: string | null
           quantity_tons: number
           remarks?: string | null
@@ -169,6 +201,7 @@ export type Database = {
           departure_time?: string
           destination?: string
           id?: string
+          material_id?: string | null
           package_id?: string | null
           quantity_tons?: number
           remarks?: string | null
@@ -180,6 +213,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shipments_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shipments_package_id_fkey"
             columns: ["package_id"]

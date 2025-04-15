@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +15,7 @@ import {
   User,
   X,
   Box,
+  Flask,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -44,8 +46,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     }
   };
 
-
-
   const menuItems = [
     ...(user?.role === "admin"
       ? [
@@ -68,6 +68,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             icon: <Box className="w-5 h-5" />,
             label: "Packages",
             path: "/packages",
+          },
+          {
+            icon: <Flask className="w-5 h-5" />,
+            label: "Materials",
+            path: "/materials",
           },
           {
             icon: <Route className="w-5 h-5" />,

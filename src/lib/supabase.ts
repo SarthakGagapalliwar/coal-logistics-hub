@@ -15,6 +15,7 @@ const mockStorage = {
   vehicles: [],
   routes: [],
   shipments: [],
+  materials: [],
 };
 
 // Create a mock client for development if variables are missing
@@ -241,5 +242,15 @@ export type DbShipment = {
   created_at: string;
   route_id?: string;
   package_id?: string;
+  material_id?: string;
 };
 
+export type DbMaterial = {
+  id: string;
+  name: string;
+  description: string | null;
+  unit: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};

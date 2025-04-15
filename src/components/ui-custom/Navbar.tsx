@@ -15,7 +15,8 @@ import {
   User,
   Users,
   Box,
-  Car  // Add Car to the import list
+  Car,
+  Flask,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -75,6 +76,7 @@ const Navbar: React.FC = () => {
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
     { to: '/vehicles', icon: <Car size={20} />, label: 'Vehicles' },
     { to: '/packages', icon: <Box size={20} />, label: 'Packages' },
+    { to: '/materials', icon: <Flask size={20} />, label: 'Materials' },
     { to: '/routes', icon: <Route size={20} />, label: 'Routes' },
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
@@ -228,4 +230,3 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
-
