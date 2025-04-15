@@ -44,22 +44,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     }
   };
 
+
+
   const menuItems = [
-    {
-      icon: <Package className="w-5 h-5" />,
-      label: "Shipments",
-      path: "/shipments",
-    },
-    {
-      icon: <BarChart3 className="w-5 h-5" />,
-      label: "Reports",
-      path: "/reports",
-    },
-    {
-      icon: <Settings className="w-5 h-5" />,
-      label: "Settings",
-      path: "/settings",
-    },
     ...(user?.role === "admin"
       ? [
           {
@@ -87,6 +74,25 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             label: "Routes",
             path: "/routes",
           },
+        ]
+      : []),
+    {
+      icon: <Package className="w-5 h-5" />,
+      label: "Shipments",
+      path: "/shipments",
+    },
+    {
+      icon: <BarChart3 className="w-5 h-5" />,
+      label: "Reports",
+      path: "/reports",
+    },
+    {
+      icon: <Settings className="w-5 h-5" />,
+      label: "Settings",
+      path: "/settings",
+    },
+    ...(user?.role === "admin"
+      ? [
           {
             icon: <User className="w-5 h-5" />,
             label: "User Management",

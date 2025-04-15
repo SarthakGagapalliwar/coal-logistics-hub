@@ -302,10 +302,11 @@ const Shipments = () => {
                       <Input
                         id="source"
                         name="source"
+                        readOnly
                         placeholder="Enter source location"
                         className="pl-10"
                         value={formData.source}
-                        onChange={handleInputChange}
+                        // onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -318,10 +319,11 @@ const Shipments = () => {
                       <Input
                         id="destination"
                         name="destination"
+                        readOnly
                         placeholder="Enter destination location"
                         className="pl-10"
                         value={formData.destination}
-                        onChange={handleInputChange}
+                        // onChange={handleInputChange}
                         required
                       />
                     </div>
