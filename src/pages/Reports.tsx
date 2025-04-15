@@ -272,18 +272,28 @@ const Reports = () => {
           'Vehicle': shipment.vehicles?.vehicle_number || 'Unknown',
           'Quantity (Tons)': shipment.quantity_tons,
           'Departure Time': format(parseISO(shipment.departure_time), 'PPP p'),
-          'Status': shipment.status,
-          'Arrival Time': shipment.arrival_time ? format(parseISO(shipment.arrival_time), 'PPP p') : 'Not arrived',
           'Remarks': shipment.remarks || '',
         };
         
         // Add billing information only for admins
         if (isAdmin) {
+          const billingRate = shipment.routes?.billing_rate_per_ton || 0;
+          const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
+          const quantity = parseFloat(shipment.quantity_tons) || 0;
+          
+          const billingAmount = billingRate * quantity;
+          const vendorAmount = vendorRate * quantity;
+          const profit = billingAmount - vendorAmount;
+          
           return {
             ...baseFields,
             'ID': shipment.id,
-            'Billing Rate (₹/Ton)': shipment.routes?.billing_rate_per_ton || 'N/A',
-            'Vendor Rate (₹/Ton)': shipment.routes?.vendor_rate_per_ton || 'N/A',
+            'Billing Rate (₹/Ton)': billingRate,
+            'Vendor Rate (₹/Ton)': vendorRate,
+            'Billing Amount (₹)': billingAmount,
+            'Vendor Amount (₹)': vendorAmount,
+            'Profit (₹)': profit,
+            'Profit per Shipment (₹)': profit,
           };
         }
         
@@ -438,8 +448,6 @@ const Reports = () => {
             </Button>
           </div>
         </div>
-        
-        {/* Removed the admin view with metrics and charts as requested */}
         
         {/* Shipment reports table - shown to all users */}
         <Card>
