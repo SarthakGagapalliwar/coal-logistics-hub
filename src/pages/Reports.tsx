@@ -36,7 +36,6 @@ const Reports = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const isAdmin = user?.role === 'admin';
   
-  // Calculate analytics metrics (only relevant for admins)
   const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
   const totalCost = revenueData.reduce((sum, item) => sum + item.cost, 0);
   const totalProfit = totalRevenue - totalCost;
@@ -53,8 +52,6 @@ const Reports = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9467BD'];
 
-  // For regular users: Load all their shipment reports on component mount
-  // For admins: Load all shipments regardless of date
   React.useEffect(() => {
     if (user) {
       if (user.role !== 'admin') {
@@ -65,7 +62,6 @@ const Reports = () => {
     }
   }, [user]);
 
-  // Fetch all shipments for admin regardless of date
   const fetchAllShipments = async () => {
     if (!isAdmin) return;
     
@@ -83,7 +79,8 @@ const Reports = () => {
           transporters:transporter_id (name),
           vehicles:vehicle_id (vehicle_number),
           packages:package_id (name),
-          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
+          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton),
+          materials:material_id (name, unit)
         `)
         .order('departure_time', { ascending: false });
       
@@ -91,7 +88,6 @@ const Reports = () => {
         throw new Error(error.message);
       }
       
-      // Process the data to include calculated fields
       const processedData = data?.map(shipment => {
         const billingRate = shipment.routes?.billing_rate_per_ton || 0;
         const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
@@ -118,14 +114,12 @@ const Reports = () => {
     }
   };
 
-  // Fetch all shipments for a regular user regardless of date
   const fetchAllUserShipments = async () => {
     if (!user) return;
     
     setIsLoadingShipments(true);
     
     try {
-      // First get user's assigned packages
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('assigned_packages')
@@ -136,14 +130,12 @@ const Reports = () => {
         throw new Error(profileError.message);
       }
       
-      // Return early if user has no assigned packages
       if (!profileData?.assigned_packages || profileData.assigned_packages.length === 0) {
         setShipmentReports([]);
         setIsLoadingShipments(false);
         return;
       }
       
-      // Fetch shipments filtered by the user's assigned packages
       const { data, error } = await supabase
         .from('shipments')
         .select(`
@@ -154,7 +146,8 @@ const Reports = () => {
           departure_time,
           transporters:transporter_id (name),
           vehicles:vehicle_id (vehicle_number),
-          packages:package_id (name)
+          packages:package_id (name),
+          materials:material_id (name, unit)
         `)
         .in('package_id', profileData.assigned_packages)
         .order('departure_time', { ascending: false });
@@ -172,26 +165,21 @@ const Reports = () => {
     }
   };
 
-  // Sort shipments based on sortField and sortDirection
   const handleSort = (field: string) => {
     if (sortField === field) {
-      // If already sorting by this field, toggle direction
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      // New sort field, default to ascending
       setSortField(field);
       setSortDirection('asc');
     }
   };
 
-  // Get sorted shipments
   const getSortedShipments = () => {
     if (!sortField) return shipmentReports;
     
     return [...shipmentReports].sort((a, b) => {
       let valueA, valueB;
       
-      // Handle nested properties
       if (sortField === 'transporters.name') {
         valueA = a.transporters?.name || '';
         valueB = b.transporters?.name || '';
@@ -201,18 +189,19 @@ const Reports = () => {
       } else if (sortField === 'packages.name') {
         valueA = a.packages?.name || '';
         valueB = b.packages?.name || '';
+      } else if (sortField === 'materials.name') {
+        valueA = a.materials?.name || '';
+        valueB = b.materials?.name || '';
       } else {
         valueA = a[sortField] || '';
         valueB = b[sortField] || '';
       }
       
-      // Sort strings case-insensitively
       if (typeof valueA === 'string' && typeof valueB === 'string') {
         const comparison = valueA.toLowerCase().localeCompare(valueB.toLowerCase());
         return sortDirection === 'asc' ? comparison : -comparison;
       }
       
-      // Sort numbers
       const comparison = valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
       return sortDirection === 'asc' ? comparison : -comparison;
     });
@@ -227,7 +216,6 @@ const Reports = () => {
     setIsExporting(true);
     
     try {
-      // Create query for export
       let query = supabase
         .from('shipments')
         .select(`
@@ -235,10 +223,10 @@ const Reports = () => {
           transporters:transporter_id (name),
           vehicles:vehicle_id (vehicle_number),
           routes:route_id (billing_rate_per_ton, vendor_rate_per_ton),
-          packages:package_id (name)
+          packages:package_id (name),
+          materials:material_id (name, unit, description)
         `);
         
-      // Filter by user's assigned packages if not admin
       if (user && user.role !== 'admin') {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -258,16 +246,13 @@ const Reports = () => {
           return;
         }
       } else if (isAdmin && dateRange?.from && dateRange?.to) {
-        // Apply date range filter only for admins
         query = query
           .gte('departure_time', dateRange.from.toISOString())
           .lte('departure_time', dateRange.to.toISOString());
       }
       
-      // Order by departure time
       query = query.order('departure_time', { ascending: false });
       
-      // Get the data
       const { data, error } = await query;
       
       if (error) {
@@ -280,7 +265,6 @@ const Reports = () => {
         return;
       }
       
-      // Format data for export - different fields for admin vs regular users
       const formattedData = data.map(shipment => {
         const baseFields = {
           'Package': shipment.packages?.name || 'N/A',
@@ -288,12 +272,13 @@ const Reports = () => {
           'Destination': shipment.destination,
           'Transporter': shipment.transporters?.name || 'Unknown',
           'Vehicle': shipment.vehicles?.vehicle_number || 'Unknown',
+          'Material': shipment.materials?.name || 'N/A',
+          'Material Unit': shipment.materials?.unit || 'N/A',
           'Quantity (Tons)': shipment.quantity_tons,
           'Departure Time': format(parseISO(shipment.departure_time), 'PPP p'),
           'Remarks': shipment.remarks || '',
         };
         
-        // Add billing information only for admins
         if (isAdmin) {
           const billingRate = shipment.routes?.billing_rate_per_ton || 0;
           const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
@@ -306,6 +291,7 @@ const Reports = () => {
           return {
             ...baseFields,
             'ID': shipment.id,
+            'Material Description': shipment.materials?.description || 'N/A',
             'Billing Rate (₹/Ton)': billingRate,
             'Vendor Rate (₹/Ton)': vendorRate,
             'Billing Amount (₹)': billingAmount,
@@ -338,7 +324,6 @@ const Reports = () => {
     }
   };
 
-  // Table columns definition - different for admin and regular users
   const regularUserColumns = [
     { 
       header: "Package",
@@ -352,6 +337,11 @@ const Reports = () => {
     {
       header: "Destination",
       accessorKey: "destination"
+    },
+    {
+      header: "Material",
+      accessorKey: "materials.name",
+      cell: (row: any) => row.materials?.name || 'N/A'
     },
     {
       header: "Transport",
@@ -388,6 +378,16 @@ const Reports = () => {
     {
       header: "Destination",
       accessorKey: "destination"
+    },
+    {
+      header: "Material",
+      accessorKey: "materials.name",
+      cell: (row: any) => row.materials?.name || 'N/A'
+    },
+    {
+      header: "Material Unit",
+      accessorKey: "materials.unit",
+      cell: (row: any) => row.materials?.unit || 'N/A'
     },
     {
       header: "Transport",
@@ -491,7 +491,6 @@ const Reports = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Reports & Analytics</h1>
           
-          {/* Export button - visible to all users, but date selection only for admins */}
           <div className="flex items-center gap-2">
             {isAdmin && (
               <div className="grid gap-2">
@@ -548,7 +547,6 @@ const Reports = () => {
           </div>
         </div>
         
-        {/* Shipment reports table - shown to all users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
@@ -574,7 +572,6 @@ const Reports = () => {
                   <TableHeader>
                     <TableRow>
                       {isAdmin ? (
-                        // For admin: columns with billing information
                         adminColumns.map((column, index) => (
                           <TableHead 
                             key={index}
@@ -586,9 +583,15 @@ const Reports = () => {
                           </TableHead>
                         ))
                       ) : (
-                        // For regular users: regular headers
                         regularUserColumns.map((column, index) => (
-                          <TableHead key={index}>{column.header}</TableHead>
+                          <TableHead 
+                            key={index}
+                            className={column.accessorKey ? "cursor-pointer hover:bg-muted/50" : ""}
+                            onClick={() => column.accessorKey ? handleSort(column.accessorKey) : null}
+                          >
+                            {column.header}
+                            {column.accessorKey && <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />}
+                          </TableHead>
                         ))
                       )}
                     </TableRow>
@@ -609,12 +612,15 @@ const Reports = () => {
                           <TableCell>{shipment.packages?.name || 'N/A'}</TableCell>
                           <TableCell>{shipment.source}</TableCell>
                           <TableCell>{shipment.destination}</TableCell>
+                          <TableCell>{shipment.materials?.name || 'N/A'}</TableCell>
+                          {isAdmin && (
+                            <TableCell>{shipment.materials?.unit || 'N/A'}</TableCell>
+                          )}
                           <TableCell>{shipment.transporters?.name || 'Unknown'}</TableCell>
                           <TableCell>{shipment.vehicles?.vehicle_number || 'Unknown'}</TableCell>
                           <TableCell>{shipment.quantity_tons} tons</TableCell>
                           <TableCell>{format(parseISO(shipment.departure_time), 'PPP')}</TableCell>
                           
-                          {/* Additional columns for admin view */}
                           {isAdmin && (
                             <>
                               <TableCell>{shipment.id}</TableCell>
