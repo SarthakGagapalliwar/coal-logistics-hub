@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +14,7 @@ import {
   User,
   X,
   Box,
-  Flask,
+  Beaker,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -70,7 +69,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             path: "/packages",
           },
           {
-            icon: <Flask className="w-5 h-5" />,
+            icon: <Beaker className="w-5 h-5" />,
             label: "Materials",
             path: "/materials",
           },

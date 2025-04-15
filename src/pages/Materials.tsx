@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -143,6 +142,18 @@ const Materials = () => {
     }
   };
 
+  const handleUnitChange = (value: string) => {
+    handleInputChange({
+      target: { name: 'unit', value }
+    } as React.ChangeEvent<HTMLSelectElement>);
+  };
+
+  const handleStatusChange = (value: string) => {
+    handleInputChange({
+      target: { name: 'status', value }
+    } as React.ChangeEvent<HTMLSelectElement>);
+  };
+
   return (
     <DashboardLayout>
       <PageTransition>
@@ -196,7 +207,6 @@ const Materials = () => {
             </CardContent>
           </Card>
 
-          {/* Material Form Dialog */}
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -245,9 +255,7 @@ const Materials = () => {
                       <Select
                         name="unit"
                         value={formData.unit}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({ ...prev, unit: value }))
-                        }
+                        onValueChange={handleUnitChange}
                       >
                         <SelectTrigger className="pl-10">
                           <SelectValue placeholder="Select unit" />
@@ -270,9 +278,7 @@ const Materials = () => {
                       <Select
                         name="status"
                         value={formData.status}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({ ...prev, status: value }))
-                        }
+                        onValueChange={handleStatusChange}
                       >
                         <SelectTrigger className="pl-10">
                           <SelectValue placeholder="Select status" />
@@ -311,7 +317,6 @@ const Materials = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Delete Confirmation Dialog */}
           <AlertDialog
             open={!!materialToDelete}
             onOpenChange={(open) => !open && setMaterialToDelete(null)}

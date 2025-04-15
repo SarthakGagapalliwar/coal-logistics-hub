@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -36,7 +37,7 @@ import {
   Weight,
   Calendar,
   Package,
-  Flask,
+  Beaker,
 } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";

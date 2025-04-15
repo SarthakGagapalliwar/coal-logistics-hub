@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -16,7 +15,7 @@ import {
   Users,
   Box,
   Car,
-  Flask,
+  Beaker,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -76,7 +75,7 @@ const Navbar: React.FC = () => {
     { to: '/transporters', icon: <Truck size={20} />, label: 'Transporters' },
     { to: '/vehicles', icon: <Car size={20} />, label: 'Vehicles' },
     { to: '/packages', icon: <Box size={20} />, label: 'Packages' },
-    { to: '/materials', icon: <Flask size={20} />, label: 'Materials' },
+    { to: '/materials', icon: <Beaker size={20} />, label: 'Materials' },
     { to: '/routes', icon: <Route size={20} />, label: 'Routes' },
     { to: '/shipments', icon: <Package size={20} />, label: 'Shipments' },
     { to: '/reports', icon: <FileText size={20} />, label: 'Reports' },
