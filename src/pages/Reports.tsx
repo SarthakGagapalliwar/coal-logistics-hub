@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertTriangle, Download, CalendarIcon, ArrowUpDown } from 'lucide-react';
@@ -83,7 +82,8 @@ const Reports = () => {
           departure_time,
           transporters:transporter_id (name),
           vehicles:vehicle_id (vehicle_number),
-          packages:package_id (name)
+          packages:package_id (name),
+          routes:route_id (billing_rate_per_ton, vendor_rate_per_ton)
         `)
         .order('departure_time', { ascending: false });
       
@@ -91,7 +91,25 @@ const Reports = () => {
         throw new Error(error.message);
       }
       
-      setShipmentReports(data || []);
+      // Process the data to include calculated fields
+      const processedData = data?.map(shipment => {
+        const billingRate = shipment.routes?.billing_rate_per_ton || 0;
+        const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
+        const quantity = parseFloat(shipment.quantity_tons) || 0;
+        
+        const billingAmount = billingRate * quantity;
+        const vendorAmount = vendorRate * quantity;
+        const profit = billingAmount - vendorAmount;
+        
+        return {
+          ...shipment,
+          billing_amount: billingAmount,
+          vendor_amount: vendorAmount,
+          profit: profit
+        };
+      });
+      
+      setShipmentReports(processedData || []);
     } catch (err) {
       console.error('Error fetching all shipment reports:', err);
       toast.error(`Failed to fetch shipment reports: ${(err as Error).message}`);
@@ -320,8 +338,8 @@ const Reports = () => {
     }
   };
 
-  // Table columns definition - same for both admin and regular users
-  const shipmentColumns = [
+  // Table columns definition - different for admin and regular users
+  const regularUserColumns = [
     { 
       header: "Package",
       accessorKey: "packages.name",
@@ -354,6 +372,87 @@ const Reports = () => {
       header: "Departure Date",
       accessorKey: "departure_time",
       cell: (row: any) => format(parseISO(row.departure_time), 'PPP')
+    }
+  ];
+
+  const adminColumns = [
+    { 
+      header: "Package",
+      accessorKey: "packages.name",
+      cell: (row: any) => row.packages?.name || 'N/A'
+    },
+    {
+      header: "Source",
+      accessorKey: "source"
+    },
+    {
+      header: "Destination",
+      accessorKey: "destination"
+    },
+    {
+      header: "Transport",
+      accessorKey: "transporters.name",
+      cell: (row: any) => row.transporters?.name || 'Unknown'
+    },
+    {
+      header: "Vehicle",
+      accessorKey: "vehicles.vehicle_number",
+      cell: (row: any) => row.vehicles?.vehicle_number || 'Unknown'
+    },
+    {
+      header: "Quantity",
+      accessorKey: "quantity_tons",
+      cell: (row: any) => `${row.quantity_tons} tons`
+    },
+    {
+      header: "Departure Date",
+      accessorKey: "departure_time",
+      cell: (row: any) => format(parseISO(row.departure_time), 'PPP')
+    },
+    {
+      header: "ID",
+      accessorKey: "id",
+    },
+    {
+      header: "Billing Rate (₹/Ton)",
+      accessorKey: "routes.billing_rate_per_ton",
+      cell: (row: any) => row.routes?.billing_rate_per_ton ? `₹${row.routes.billing_rate_per_ton}` : 'N/A'
+    },
+    {
+      header: "Vendor Rate (₹/Ton)",
+      accessorKey: "routes.vendor_rate_per_ton",
+      cell: (row: any) => row.routes?.vendor_rate_per_ton ? `₹${row.routes.vendor_rate_per_ton}` : 'N/A'
+    },
+    {
+      header: "Billing Amount (₹)",
+      accessorKey: "billing_amount",
+      cell: (row: any) => {
+        const billingRate = row.routes?.billing_rate_per_ton || 0;
+        const quantity = parseFloat(row.quantity_tons) || 0;
+        const amount = billingRate * quantity;
+        return `₹${amount.toFixed(2)}`;
+      }
+    },
+    {
+      header: "Vendor Amount (₹)",
+      accessorKey: "vendor_amount",
+      cell: (row: any) => {
+        const vendorRate = row.routes?.vendor_rate_per_ton || 0;
+        const quantity = parseFloat(row.quantity_tons) || 0;
+        const amount = vendorRate * quantity;
+        return `₹${amount.toFixed(2)}`;
+      }
+    },
+    {
+      header: "Profit (₹)",
+      accessorKey: "profit",
+      cell: (row: any) => {
+        const billingRate = row.routes?.billing_rate_per_ton || 0;
+        const vendorRate = row.routes?.vendor_rate_per_ton || 0;
+        const quantity = parseFloat(row.quantity_tons) || 0;
+        const profit = (billingRate - vendorRate) * quantity;
+        return `₹${profit.toFixed(2)}`;
+      }
     }
   ];
 
@@ -470,58 +569,25 @@ const Reports = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       {isAdmin ? (
-                        // For admin: sortable headers
-                        <>
+                        // For admin: columns with billing information
+                        adminColumns.map((column, index) => (
                           <TableHead 
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => handleSort('packages.name')}
+                            key={index}
+                            className={column.accessorKey ? "cursor-pointer hover:bg-muted/50" : ""}
+                            onClick={() => column.accessorKey ? handleSort(column.accessorKey) : null}
                           >
-                            Package
-                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+                            {column.header}
+                            {column.accessorKey && <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />}
                           </TableHead>
-                          <TableHead 
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => handleSort('source')}
-                          >
-                            Source
-                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
-                          </TableHead>
-                          <TableHead 
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => handleSort('destination')}
-                          >
-                            Destination
-                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
-                          </TableHead>
-                          <TableHead 
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => handleSort('transporters.name')}
-                          >
-                            Transport
-                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
-                          </TableHead>
-                          <TableHead 
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => handleSort('vehicles.vehicle_number')}
-                          >
-                            Vehicle
-                            <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
-                          </TableHead>
-                          <TableHead>
-                            Quantity
-                          </TableHead>
-                          <TableHead>
-                            Departure Date
-                          </TableHead>
-                        </>
+                        ))
                       ) : (
                         // For regular users: regular headers
-                        shipmentColumns.map((column, index) => (
+                        regularUserColumns.map((column, index) => (
                           <TableHead key={index}>{column.header}</TableHead>
                         ))
                       )}
@@ -530,7 +596,7 @@ const Reports = () => {
                   <TableBody>
                     {sortedShipments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={shipmentColumns.length} className="h-24 text-center">
+                        <TableCell colSpan={isAdmin ? adminColumns.length : regularUserColumns.length} className="h-24 text-center">
                           {isAdmin
                             ? 'No shipments found in the system'
                             : 'No shipments have been assigned to you'
@@ -547,6 +613,44 @@ const Reports = () => {
                           <TableCell>{shipment.vehicles?.vehicle_number || 'Unknown'}</TableCell>
                           <TableCell>{shipment.quantity_tons} tons</TableCell>
                           <TableCell>{format(parseISO(shipment.departure_time), 'PPP')}</TableCell>
+                          
+                          {/* Additional columns for admin view */}
+                          {isAdmin && (
+                            <>
+                              <TableCell>{shipment.id}</TableCell>
+                              <TableCell>
+                                {shipment.routes?.billing_rate_per_ton ? `₹${shipment.routes.billing_rate_per_ton}` : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                {shipment.routes?.vendor_rate_per_ton ? `₹${shipment.routes.vendor_rate_per_ton}` : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const billingRate = shipment.routes?.billing_rate_per_ton || 0;
+                                  const quantity = parseFloat(shipment.quantity_tons) || 0;
+                                  const amount = billingRate * quantity;
+                                  return `₹${amount.toFixed(2)}`;
+                                })()}
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
+                                  const quantity = parseFloat(shipment.quantity_tons) || 0;
+                                  const amount = vendorRate * quantity;
+                                  return `₹${amount.toFixed(2)}`;
+                                })()}
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const billingRate = shipment.routes?.billing_rate_per_ton || 0;
+                                  const vendorRate = shipment.routes?.vendor_rate_per_ton || 0;
+                                  const quantity = parseFloat(shipment.quantity_tons) || 0;
+                                  const profit = (billingRate - vendorRate) * quantity;
+                                  return `₹${profit.toFixed(2)}`;
+                                })()}
+                              </TableCell>
+                            </>
+                          )}
                         </TableRow>
                       ))
                     )}
