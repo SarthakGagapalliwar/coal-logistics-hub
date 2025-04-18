@@ -208,7 +208,7 @@ const Reports = () => {
   };
 
   const handleExportExcel = async () => {
-    if (isAdmin && (!dateRange?.from || !dateRange?.to)) {
+    if (!dateRange?.from || !dateRange?.to) {
       toast.error('Please select both start and end dates');
       return;
     }
@@ -225,7 +225,9 @@ const Reports = () => {
           routes:route_id (billing_rate_per_ton, vendor_rate_per_ton),
           packages:package_id (name),
           materials:material_id (name, unit, description)
-        `);
+        `)
+        .gte('departure_time', dateRange.from.toISOString())
+        .lte('departure_time', dateRange.to.toISOString());
         
       if (user && user.role !== 'admin') {
         const { data: profileData, error: profileError } = await supabase
@@ -245,10 +247,6 @@ const Reports = () => {
           setIsExporting(false);
           return;
         }
-      } else if (isAdmin && dateRange?.from && dateRange?.to) {
-        query = query
-          .gte('departure_time', dateRange.from.toISOString())
-          .lte('departure_time', dateRange.to.toISOString());
       }
       
       query = query.order('departure_time', { ascending: false });
@@ -260,7 +258,7 @@ const Reports = () => {
       }
       
       if (data.length === 0) {
-        toast.warning('No shipments found to export');
+        toast.warning('No shipments found in the selected date range');
         setIsExporting(false);
         return;
       }
@@ -274,6 +272,7 @@ const Reports = () => {
           'Vehicle': shipment.vehicles?.vehicle_number || 'Unknown',
           'Material': shipment.materials?.name || 'N/A',
           'Material Unit': shipment.materials?.unit || 'N/A',
+          'Material Description': shipment.materials?.description || 'N/A',
           'Quantity (Tons)': shipment.quantity_tons,
           'Departure Time': format(parseISO(shipment.departure_time), 'PPP p'),
           'Remarks': shipment.remarks || '',
@@ -291,13 +290,11 @@ const Reports = () => {
           return {
             ...baseFields,
             'ID': shipment.id,
-            'Material Description': shipment.materials?.description || 'N/A',
             'Billing Rate (₹/Ton)': billingRate,
             'Vendor Rate (₹/Ton)': vendorRate,
             'Billing Amount (₹)': billingAmount,
             'Vendor Amount (₹)': vendorAmount,
             'Profit (₹)': profit,
-            'Profit per Shipment (₹)': profit,
           };
         }
         
@@ -305,14 +302,10 @@ const Reports = () => {
       });
       
       const worksheet = utils.json_to_sheet(formattedData);
-      
       const workbook = utils.book_new();
       utils.book_append_sheet(workbook, worksheet, 'Shipments');
       
-      const filename = isAdmin && dateRange?.from && dateRange?.to
-        ? `Shipments_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.xlsx`
-        : `Shipments_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-      
+      const filename = `Shipments_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.xlsx`;
       writeFile(workbook, filename);
       
       toast.success('Shipment report downloaded successfully');
@@ -492,50 +485,48 @@ const Reports = () => {
           <h1 className="text-2xl font-bold">Reports & Analytics</h1>
           
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <div className="grid gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="date"
-                      variant="outline"
-                      className={cn(
-                        "w-[300px] justify-start text-left font-normal",
-                        !dateRange?.from && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange?.from ? (
-                        dateRange.to ? (
-                          <>
-                            {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
-                          </>
-                        ) : (
-                          format(dateRange.from, "LLL dd, y")
-                        )
+            <div className="grid gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant="outline"
+                    className={cn(
+                      "w-[300px] justify-start text-left font-normal",
+                      !dateRange?.from && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                        </>
                       ) : (
-                        <span>Select date range</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                    <Calendar
-                      initialFocus
-                      mode="range"
-                      defaultMonth={dateRange?.from}
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      numberOfMonths={2}
-                      className="pointer-events-auto p-3"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Select date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    className="pointer-events-auto p-3"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             
             <Button 
               onClick={handleExportExcel} 
-              disabled={isExporting || (isAdmin && (!dateRange?.from || !dateRange?.to))}
+              disabled={isExporting || (!dateRange?.from || !dateRange?.to)}
             >
               {isExporting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
