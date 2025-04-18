@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -53,8 +54,8 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
 
 // Convert app format to DB format
 const appToDbShipment = (shipment: Partial<Shipment>) => ({
-  transporter_id: shipment.transporterId,
-  vehicle_id: shipment.vehicleId,
+  transporter_id: shipment.transporterId || null,
+  vehicle_id: shipment.vehicleId || null,
   source: shipment.source,
   destination: shipment.destination,
   quantity_tons: shipment.quantityTons,
@@ -62,7 +63,7 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   departure_time: shipment.departureTime,
   arrival_time: shipment.arrivalTime,
   remarks: shipment.remarks,
-  route_id: shipment.routeId,
+  route_id: shipment.routeId || null,
   package_id: shipment.packageId && shipment.packageId !== 'none' ? shipment.packageId : null,
   material_id: shipment.materialId && shipment.materialId !== 'none' ? shipment.materialId : null,
 });
@@ -201,9 +202,19 @@ export const useShipments = () => {
   const addShipmentMutation = useMutation({
     mutationFn: async (shipment: Omit<Shipment, 'id'>) => {
       try {
-        let shipmentData = appToDbShipment(shipment);
+        // Create a clean shipment object and validate required fields
+        const shipmentData = appToDbShipment(shipment);
         
         console.log('Creating shipment with data:', shipmentData);
+        
+        // Check for empty required fields
+        if (!shipmentData.transporter_id) {
+          throw new Error('Transporter is required');
+        }
+        
+        if (!shipmentData.vehicle_id) {
+          throw new Error('Vehicle is required');
+        }
         
         const { data, error } = await supabase
           .from('shipments')
@@ -250,10 +261,20 @@ export const useShipments = () => {
   const updateShipmentMutation = useMutation({
     mutationFn: async (shipment: Shipment) => {
       try {
-        let shipmentData = appToDbShipment(shipment);
+        // Create a clean shipment object
+        const shipmentData = appToDbShipment(shipment);
         
         console.log('Updating shipment with data:', shipmentData);
         console.log('Shipment ID:', shipment.id);
+        
+        // Check for empty required fields
+        if (!shipmentData.transporter_id) {
+          throw new Error('Transporter is required');
+        }
+        
+        if (!shipmentData.vehicle_id) {
+          throw new Error('Vehicle is required');
+        }
         
         const { error } = await supabase
           .from('shipments')
@@ -397,6 +418,27 @@ export const useShipments = () => {
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.transporterId) {
+      toast.error('Please select a transporter');
+      return;
+    }
+    
+    if (!formData.vehicleId) {
+      toast.error('Please select a vehicle');
+      return;
+    }
+    
+    if (!formData.source || !formData.destination) {
+      toast.error('Source and destination are required');
+      return;
+    }
+    
+    if (!formData.quantityTons) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
     
     const shipmentData = {
       transporterId: formData.transporterId,
