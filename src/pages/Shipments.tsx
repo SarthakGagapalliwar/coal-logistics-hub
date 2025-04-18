@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -343,7 +344,6 @@ const Shipments = () => {
                         placeholder="Enter source location"
                         className="pl-10"
                         value={formData.source}
-                        // onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -360,7 +360,6 @@ const Shipments = () => {
                         placeholder="Enter destination location"
                         className="pl-10"
                         value={formData.destination}
-                        // onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -458,7 +457,8 @@ const Shipments = () => {
                       id="quantityTons"
                       name="quantityTons"
                       type="number"
-                      min="1"
+                      min="0.00001"
+                      step="0.00001"
                       placeholder="Enter quantity in tons"
                       className="pl-10"
                       value={formData.quantityTons}
@@ -466,6 +466,9 @@ const Shipments = () => {
                       required
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Precise quantities up to 5 decimal places are supported
+                  </p>
                 </div>
 
                 <div className="space-y-2">

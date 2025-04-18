@@ -403,7 +403,7 @@ export const useShipments = () => {
       vehicleId: formData.vehicleId,
       source: formData.source,
       destination: formData.destination,
-      quantityTons: Number(formData.quantityTons),
+      quantityTons: Number(parseFloat(formData.quantityTons).toFixed(5)),
       status: formData.status,
       departureTime: formData.departureTime,
       arrivalTime: formData.arrivalTime || null,

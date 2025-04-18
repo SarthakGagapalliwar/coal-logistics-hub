@@ -4,6 +4,10 @@ import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
+    // For number inputs with step attribute, use the provided step
+    // Otherwise for generic number inputs, default to "any" to allow decimals
+    const numberProps = type === "number" && !props.step ? { step: "any" } : {};
+    
     return (
       <input
         type={type}
@@ -12,6 +16,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        {...numberProps}
         {...props}
       />
     )
