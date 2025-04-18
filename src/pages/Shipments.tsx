@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -427,28 +426,8 @@ const Shipments = () => {
                         name="departureTime"
                         type="datetime-local"
                         className="pl-10"
-                        value={formData.departureTime ? formData.departureTime.slice(0, 16) : ""}
-                        onChange={(e) => {
-                          // Ensure we capture the full datetime value
-                          let dateValue = e.target.value;
-                          if (dateValue) {
-                            // Add seconds if they are missing
-                            if (dateValue.length === 16) {
-                              dateValue += ":00";
-                            }
-                            // Create a proper ISO string
-                            const date = new Date(dateValue).toISOString();
-                            setFormData((prev) => ({
-                              ...prev,
-                              departureTime: date,
-                            }));
-                          } else {
-                            setFormData((prev) => ({
-                              ...prev,
-                              departureTime: "",
-                            }));
-                          }
-                        }}
+                        value={formData.departureTime}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>

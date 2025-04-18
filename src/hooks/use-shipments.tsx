@@ -314,7 +314,13 @@ export const useShipments = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Handle special case for datetime-local inputs
+    if (name === "departureTime" || name === "arrivalTime") {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -345,6 +351,8 @@ export const useShipments = () => {
     let departureTimeFormatted = '';
     if (shipment.departureTime) {
       try {
+        // Format the departure time for the datetime-local input
+        // The format should be YYYY-MM-DDThh:mm
         const departureDate = new Date(shipment.departureTime);
         departureTimeFormatted = departureDate.toISOString().slice(0, 16);
       } catch (error) {
@@ -356,6 +364,7 @@ export const useShipments = () => {
     let arrivalTimeFormatted = '';
     if (shipment.arrivalTime) {
       try {
+        // Format the arrival time for the datetime-local input
         const arrivalDate = new Date(shipment.arrivalTime);
         arrivalTimeFormatted = arrivalDate.toISOString().slice(0, 16);
       } catch (error) {
@@ -391,6 +400,7 @@ export const useShipments = () => {
   };
 
   const resetForm = () => {
+    // Use the current date and time as default for new shipments
     const now = new Date();
     const formattedNow = now.toISOString().slice(0, 16);
     
