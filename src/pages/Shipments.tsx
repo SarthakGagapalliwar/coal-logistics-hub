@@ -427,21 +427,27 @@ const Shipments = () => {
                         name="departureTime"
                         type="datetime-local"
                         className="pl-10"
-                        value={
-                          formData.departureTime
-                            ? new Date(formData.departureTime)
-                                .toISOString()
-                                .slice(0, 16)
-                            : ""
-                        }
+                        value={formData.departureTime ? formData.departureTime.slice(0, 16) : ""}
                         onChange={(e) => {
-                          const date = e.target.value
-                            ? new Date(e.target.value).toISOString()
-                            : "";
-                          setFormData((prev) => ({
-                            ...prev,
-                            departureTime: date,
-                          }));
+                          // Ensure we capture the full datetime value
+                          let dateValue = e.target.value;
+                          if (dateValue) {
+                            // Add seconds if they are missing
+                            if (dateValue.length === 16) {
+                              dateValue += ":00";
+                            }
+                            // Create a proper ISO string
+                            const date = new Date(dateValue).toISOString();
+                            setFormData((prev) => ({
+                              ...prev,
+                              departureTime: date,
+                            }));
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              departureTime: "",
+                            }));
+                          }
                         }}
                         required
                       />

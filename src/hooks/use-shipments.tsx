@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, DbShipment, handleSupabaseError } from '@/lib/supabase';
@@ -10,7 +9,6 @@ import { fetchPackages } from './use-packages';
 import { fetchMaterials } from './use-materials';
 import { useAuth } from '@/context/AuthContext';
 
-// Type for our app's shipment format
 export interface Shipment {
   id: string;
   transporterId: string;
@@ -34,7 +32,6 @@ export interface Shipment {
   created_at?: string;
 }
 
-// Convert DB format to app format
 const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   id: dbShipment.id,
   transporterId: dbShipment.transporter_id,
@@ -52,7 +49,6 @@ const dbToAppShipment = (dbShipment: DbShipment): Shipment => ({
   created_at: dbShipment.created_at,
 });
 
-// Convert app format to DB format
 const appToDbShipment = (shipment: Partial<Shipment>) => ({
   transporter_id: shipment.transporterId || null,
   vehicle_id: shipment.vehicleId || null,
@@ -68,7 +64,6 @@ const appToDbShipment = (shipment: Partial<Shipment>) => ({
   material_id: shipment.materialId && shipment.materialId !== 'none' ? shipment.materialId : null,
 });
 
-// Fetch shipments based on user role and assigned packages
 export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = []) => {
   try {
     let query = supabase
@@ -83,11 +78,9 @@ export const fetchShipments = async (isAdmin: boolean, userPackages: string[] = 
       `)
       .order('created_at', { ascending: false });
     
-    // For regular users, only show shipments related to their assigned packages
     if (!isAdmin && userPackages.length > 0) {
       query = query.in('package_id', userPackages);
     } else if (!isAdmin) {
-      // If a regular user has no assigned packages, return empty array
       return [];
     }
     
@@ -120,7 +113,6 @@ export const useShipments = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   
-  // Use separate queries for related data
   const { data: transporters = [] } = useQuery({
     queryKey: ['transporters'],
     queryFn: fetchTransporters
@@ -163,7 +155,6 @@ export const useShipments = () => {
     vendorRatePerTon: null,
   });
 
-  // Fetch user's assigned packages
   const { data: userProfile } = useQuery({
     queryKey: ['userProfile', user?.id],
     queryFn: async () => {
@@ -187,27 +178,19 @@ export const useShipments = () => {
   
   const userPackages = userProfile?.assigned_packages || [];
 
-  // Query to fetch shipments
-  const { 
-    data: shipments = [], 
-    isLoading, 
-    error 
-  } = useQuery({
+  const { data: shipments = [], isLoading, error } = useQuery({
     queryKey: ['shipments', isAdmin, userPackages],
     queryFn: () => fetchShipments(isAdmin, userPackages),
     enabled: !!user
   });
 
-  // Mutation to add a new shipment
   const addShipmentMutation = useMutation({
     mutationFn: async (shipment: Omit<Shipment, 'id'>) => {
       try {
-        // Create a clean shipment object and validate required fields
         const shipmentData = appToDbShipment(shipment);
         
         console.log('Creating shipment with data:', shipmentData);
         
-        // Check for empty required fields
         if (!shipmentData.transporter_id) {
           throw new Error('Transporter is required');
         }
@@ -257,17 +240,14 @@ export const useShipments = () => {
     }
   });
 
-  // Mutation to update a shipment
   const updateShipmentMutation = useMutation({
     mutationFn: async (shipment: Shipment) => {
       try {
-        // Create a clean shipment object
         const shipmentData = appToDbShipment(shipment);
         
         console.log('Updating shipment with data:', shipmentData);
         console.log('Shipment ID:', shipment.id);
         
-        // Check for empty required fields
         if (!shipmentData.transporter_id) {
           throw new Error('Transporter is required');
         }
@@ -304,7 +284,6 @@ export const useShipments = () => {
     }
   });
 
-  // Mutation to delete a shipment
   const deleteShipmentMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -321,7 +300,6 @@ export const useShipments = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       
-      // Find the deleted shipment for the success message
       const deletedShipment = shipments.find(s => s.id === variables);
       if (deletedShipment) {
         toast.success(`Shipment from ${deletedShipment.source} to ${deletedShipment.destination} deleted successfully`);
@@ -334,26 +312,21 @@ export const useShipments = () => {
     }
   });
 
-  // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // If we're selecting a package, clear route selection
     if (name === 'packageId') {
       setFormData(prev => ({
         ...prev,
         [name]: value,
         routeId: '' // Reset route when package changes
       }));
-    }
-    // If we're selecting a route, auto-fill source and destination
-    else if (name === 'routeId' && value) {
+    } else if (name === 'routeId' && value) {
       const selectedRoute = routes.find(route => route.id === value);
       if (selectedRoute) {
         setFormData(prev => ({
@@ -366,9 +339,31 @@ export const useShipments = () => {
     }
   };
 
-  // Set up to edit a shipment
   const handleEditShipment = (shipment: Shipment) => {
     setSelectedShipment(shipment);
+    
+    let departureTimeFormatted = '';
+    if (shipment.departureTime) {
+      try {
+        const departureDate = new Date(shipment.departureTime);
+        departureTimeFormatted = departureDate.toISOString().slice(0, 16);
+      } catch (error) {
+        console.error("Error formatting departure time:", error);
+        departureTimeFormatted = '';
+      }
+    }
+    
+    let arrivalTimeFormatted = '';
+    if (shipment.arrivalTime) {
+      try {
+        const arrivalDate = new Date(shipment.arrivalTime);
+        arrivalTimeFormatted = arrivalDate.toISOString().slice(0, 16);
+      } catch (error) {
+        console.error("Error formatting arrival time:", error);
+        arrivalTimeFormatted = '';
+      }
+    }
+    
     setFormData({
       transporterId: shipment.transporterId,
       vehicleId: shipment.vehicleId,
@@ -376,8 +371,8 @@ export const useShipments = () => {
       destination: shipment.destination,
       quantityTons: shipment.quantityTons.toString(),
       status: shipment.status,
-      departureTime: shipment.departureTime,
-      arrivalTime: shipment.arrivalTime || '',
+      departureTime: departureTimeFormatted,
+      arrivalTime: arrivalTimeFormatted,
       remarks: shipment.remarks || '',
       routeId: shipment.routeId || '',
       packageId: shipment.packageId || 'none',
@@ -385,18 +380,20 @@ export const useShipments = () => {
       billingRatePerTon: shipment.billingRatePerTon || null,
       vendorRatePerTon: shipment.vendorRatePerTon || null,
     });
+    
     setOpenDialog(true);
   };
 
-  // Set up to add a new shipment
   const handleAddShipment = () => {
     setSelectedShipment(null);
     resetForm();
     setOpenDialog(true);
   };
 
-  // Reset the form
   const resetForm = () => {
+    const now = new Date();
+    const formattedNow = now.toISOString().slice(0, 16);
+    
     setFormData({
       transporterId: '',
       vehicleId: '',
@@ -404,7 +401,7 @@ export const useShipments = () => {
       destination: '',
       quantityTons: '',
       status: 'Pending',
-      departureTime: new Date().toISOString(),
+      departureTime: formattedNow,
       arrivalTime: '',
       remarks: '',
       routeId: '',
@@ -415,11 +412,9 @@ export const useShipments = () => {
     });
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
     if (!formData.transporterId) {
       toast.error('Please select a transporter');
       return;
@@ -458,18 +453,15 @@ export const useShipments = () => {
     };
     
     if (selectedShipment) {
-      // Update existing shipment
       updateShipmentMutation.mutate({
         id: selectedShipment.id,
         ...shipmentData
       });
     } else {
-      // Add new shipment
       addShipmentMutation.mutate(shipmentData as Omit<Shipment, 'id'>);
     }
   };
 
-  // Define isSubmitting state
   const isSubmitting = addShipmentMutation.isPending || updateShipmentMutation.isPending;
 
   return {
