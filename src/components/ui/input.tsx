@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -10,9 +9,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
     const numberProps = type === "number" && !props.step ? { step: "any" } : {};
     
     // For datetime-local inputs, ensure we preserve the selected time
-    const datetimeProps = type === "datetime-local" ? { 
-      step: "60" // Set to 60 seconds (1 minute) precision
-    } : {};
+    // We're removing the step attribute for datetime-local to prevent any time rounding issues
+    const datetimeProps = type === "datetime-local" ? {} : {};
     
     return (
       <input

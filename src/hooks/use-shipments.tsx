@@ -314,13 +314,7 @@ export const useShipments = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Handle special case for datetime-local inputs
-    if (name === "departureTime" || name === "arrivalTime") {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -352,9 +346,8 @@ export const useShipments = () => {
     if (shipment.departureTime) {
       try {
         // Format the departure time for the datetime-local input
-        // The format should be YYYY-MM-DDThh:mm
-        const departureDate = new Date(shipment.departureTime);
-        departureTimeFormatted = departureDate.toISOString().slice(0, 16);
+        // This preserves the exact time as stored in the database
+        departureTimeFormatted = shipment.departureTime.slice(0, 16);
       } catch (error) {
         console.error("Error formatting departure time:", error);
         departureTimeFormatted = '';
@@ -365,8 +358,7 @@ export const useShipments = () => {
     if (shipment.arrivalTime) {
       try {
         // Format the arrival time for the datetime-local input
-        const arrivalDate = new Date(shipment.arrivalTime);
-        arrivalTimeFormatted = arrivalDate.toISOString().slice(0, 16);
+        arrivalTimeFormatted = shipment.arrivalTime.slice(0, 16);
       } catch (error) {
         console.error("Error formatting arrival time:", error);
         arrivalTimeFormatted = '';
@@ -452,7 +444,7 @@ export const useShipments = () => {
       destination: formData.destination,
       quantityTons: Number(parseFloat(formData.quantityTons).toFixed(5)),
       status: formData.status,
-      departureTime: formData.departureTime,
+      departureTime: formData.departureTime, // This is already in the correct format
       arrivalTime: formData.arrivalTime || null,
       remarks: formData.remarks,
       routeId: formData.routeId || undefined,

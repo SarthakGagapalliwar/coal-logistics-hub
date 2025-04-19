@@ -41,7 +41,7 @@ import {
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useShipments } from "@/hooks/use-shipments";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
 import { formatCurrency } from "@/lib/data";
@@ -74,8 +74,9 @@ const Shipments = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not arrived";
     try {
-      return format(new Date(dateString), "MMM d, yyyy HH:mm");
+      return format(parseISO(dateString), "MMM d, yyyy HH:mm");
     } catch (error) {
+      console.error("Error formatting date:", error, dateString);
       return "Invalid date";
     }
   };
