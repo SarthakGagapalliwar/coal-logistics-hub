@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -74,7 +75,11 @@ const Shipments = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not arrived";
     try {
-      return format(parseISO(dateString), "MMM d, yyyy HH:mm");
+      // Parse the date string without applying timezone offset
+      const dateObject = parseISO(dateString);
+      
+      // Format the date directly without timezone conversion
+      return format(dateObject, "MMM d, yyyy HH:mm");
     } catch (error) {
       console.error("Error formatting date:", error, dateString);
       return "Invalid date";
