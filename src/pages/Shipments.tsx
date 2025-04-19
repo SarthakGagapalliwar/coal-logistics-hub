@@ -75,11 +75,13 @@ const Shipments = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not arrived";
     try {
-      // Parse the date string without applying timezone offset
-      const dateObject = parseISO(dateString);
+      // Create date object from the ISO string but force it to be treated as UTC
+      // This prevents automatic timezone conversion
+      const dateString2 = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+      const date = new Date(dateString2);
       
-      // Format the date directly without timezone conversion
-      return format(dateObject, "MMM d, yyyy HH:mm");
+      // Format the date without timezone adjustment
+      return format(date, "MMM d, yyyy HH:mm");
     } catch (error) {
       console.error("Error formatting date:", error, dateString);
       return "Invalid date";
