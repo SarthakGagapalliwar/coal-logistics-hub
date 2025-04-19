@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Helmet } from "react-helmet";
 import PageTransition from "@/components/ui-custom/PageTransition";
@@ -42,7 +41,7 @@ import {
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useShipments } from "@/hooks/use-shipments";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { Column } from "@/types/data-table";
 import { formatCurrency } from "@/lib/data";
@@ -75,13 +74,25 @@ const Shipments = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not arrived";
     try {
-      // Create date object from the ISO string but force it to be treated as UTC
-      // This prevents automatic timezone conversion
-      const dateString2 = dateString.endsWith('Z') ? dateString : dateString + 'Z';
-      const date = new Date(dateString2);
+      // Simple formatting that avoids timezone issues
+      // Just display the date and time as stored in the database
+      const parts = dateString.split('T');
+      if (parts.length !== 2) return dateString;
       
-      // Format the date without timezone adjustment
-      return format(date, "MMM d, yyyy HH:mm");
+      // Extract date part
+      const datePart = parts[0].split('-');
+      if (datePart.length !== 3) return dateString;
+      
+      // Extract time part (remove any timezone info)
+      const timePart = parts[1].split('+')[0].split('.')[0];
+      
+      // Format as "MMM d, yyyy HH:mm"
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[parseInt(datePart[1]) - 1];
+      const day = parseInt(datePart[2]);
+      const year = datePart[0];
+      
+      return `${month} ${day}, ${year} ${timePart}`;
     } catch (error) {
       console.error("Error formatting date:", error, dateString);
       return "Invalid date";

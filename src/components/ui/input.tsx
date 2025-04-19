@@ -9,8 +9,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
     // Otherwise for generic number inputs, default to "any" to allow decimals
     const numberProps = type === "number" && !props.step ? { step: "any" } : {};
     
-    // For datetime-local inputs, ensure we preserve the exact time without timezone adjustments
-    const datetimeProps = type === "datetime-local" ? { step: "60" } : {};
+    // For datetime-local inputs, don't add special props to avoid timezone issues
+    const datetimeProps = type === "datetime-local" ? {} : {};
     
     return (
       <input
